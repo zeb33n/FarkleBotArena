@@ -29,7 +29,7 @@ def make_pybot(name: str) -> Callable[[dict[str, str]], bool]:
 
 def make_exebot(name: str) -> Callable[[dict[str, str]], bool]:
     def exebot(json: dict[str, str]) -> bool:
-        pass
+        return random.randint(0, 1)
 
     return exebot
 
@@ -51,7 +51,7 @@ class App:
             match extension:
                 case "py":
                     out[bot_name] = make_pybot(bot_name)
-                case "":
+                case "exe":
                     out[bot_name] = make_exebot(bot_name)
                 case _:
                     raise ValueError(
@@ -84,7 +84,7 @@ class App:
                 while run_bot("json TODO"):
                     time.sleep(1)
                     print("\033[F" * 4)
-                    print(f"{bot_name}'s turn")
+                    print(f"{bot_name}'s turn", flush=True)
                     print(f"current score: {self.game_state.round_score}")
                     print(f"rolled {self.roll_dice()}")
                     self.game_state.round_score += 100
