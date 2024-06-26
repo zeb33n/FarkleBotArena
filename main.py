@@ -26,8 +26,8 @@ class GameState:
         return bytes(json.dumps(asdict(self)).encode("utf-8"))
 
 
-def make_pybot(name: bytes) -> Callable[[dict[str, str]], bool]:
-    def pybot(json: str) -> bool:
+def make_pybot(name: str) -> Callable[[bytes], bool]:
+    def pybot(json: bytes) -> bool:
         out = subprocess.run(
             ["python", f"{BOT_DIR_LOC}/{name}.py", json],
             capture_output=True,
@@ -37,8 +37,8 @@ def make_pybot(name: bytes) -> Callable[[dict[str, str]], bool]:
     return pybot
 
 
-def make_exebot(name: bytes) -> Callable[[dict[str, str]], bool]:
-    def exebot(json: str) -> bool:
+def make_exebot(name: str) -> Callable[[bytes], bool]:
+    def exebot(json: bytes) -> bool:
         out = subprocess.run(
             [f"{BOT_DIR_LOC}/{name}.exe", json],
             capture_output=True,
@@ -55,7 +55,7 @@ class App:
         self.initialise_screen()
         self.update_scores()
 
-    def load_bots(self) -> dict[str, Callable[[dict[str, str]], bool]]:
+    def load_bots(self) -> dict[str, Callable[[bytes], bool]]:
         bot_info = tuple(botfile.rsplit(".", 1) for botfile in os.listdir(BOT_DIR_LOC))
         out = {}
         for bot_name, extension in bot_info:
@@ -93,14 +93,14 @@ class App:
             for bot_name, run_bot in self.bots.items():
                 self.game_state.round_score = 0
                 while run_bot(self.game_state.to_json()):
-                    time.sleep(1)
+                    self.game_state.round_score += 100
                     print("\033[F" * 4)
                     print((" " * 50 + "\n") * 2)
                     print("\033[F" * 4)
                     print(f"{bot_name}'s turn", flush=True)
                     print(f"current score: {self.game_state.round_score}")
                     print(f"rolled {self.roll_dice()}")
-                    self.game_state.round_score += 100
+                    time.sleep(1)
                 else:
                     self.game_state.bots[bot_name] += self.game_state.round_score
                     self.update_scores()
