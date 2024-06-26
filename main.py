@@ -2,6 +2,7 @@ from collections.abc import Callable
 import random
 import time
 import os
+import subprocess
 from dataclasses import dataclass
 
 # TODO
@@ -11,6 +12,7 @@ from dataclasses import dataclass
 # make output pretty
 
 LINES = 3
+BOT_DIR_LOC = f'{__file__.rsplit("/", 1)[0]}/bots'
 
 
 @dataclass
@@ -22,14 +24,22 @@ class GameState:
 
 def make_pybot(name: str) -> Callable[[dict[str, str]], bool]:
     def pybot(json: dict[str, str]) -> bool:
-        return random.randint(0, 1)
+        out = subprocess.run(
+            ["python", f"{BOT_DIR_LOC}/{name}.py"],
+            capture_output=True,
+        )
+        return int(out.stdout)
 
     return pybot
 
 
 def make_exebot(name: str) -> Callable[[dict[str, str]], bool]:
     def exebot(json: dict[str, str]) -> bool:
-        return random.randint(0, 1)
+        out = subprocess.run(
+            [f"{BOT_DIR_LOC}/{name}.exe"],
+            capture_output=True,
+        )
+        return int(out.stdout)
 
     return exebot
 
@@ -42,10 +52,7 @@ class App:
         self.update_scores()
 
     def load_bots(self) -> dict[str, Callable[[dict[str, str]], bool]]:
-        bot_info = tuple(
-            botfile.rsplit(".", 1)
-            for botfile in os.listdir(f'{__file__.rsplit("/", 1)[0]}/bots')
-        )
+        bot_info = tuple(botfile.rsplit(".", 1) for botfile in os.listdir(BOT_DIR_LOC))
         out = {}
         for bot_name, extension in bot_info:
             match extension:
@@ -83,6 +90,8 @@ class App:
                 self.game_state.round_score = 0
                 while run_bot("json TODO"):
                     time.sleep(1)
+                    print("\033[F" * 4)
+                    print((" " * 50 + "\n") * 2)
                     print("\033[F" * 4)
                     print(f"{bot_name}'s turn", flush=True)
                     print(f"current score: {self.game_state.round_score}")
