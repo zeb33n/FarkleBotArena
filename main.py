@@ -3,7 +3,8 @@ import random
 import time
 import os
 import subprocess
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 
 # TODO
 # save write proper pybot exebot functions for calling the bots wiht jsons and capturing the outpur
@@ -21,6 +22,9 @@ class GameState:
     num_dice: int
     round_score: int
 
+    def to_json(self) -> str:
+        return json.dumps(asdict(self))
+
 
 def make_pybot(name: str) -> Callable[[dict[str, str]], bool]:
     def pybot(json: dict[str, str]) -> bool:
@@ -28,7 +32,7 @@ def make_pybot(name: str) -> Callable[[dict[str, str]], bool]:
             ["python", f"{BOT_DIR_LOC}/{name}.py"],
             capture_output=True,
         )
-        return int(out.stdout)
+        return bool(int(out.stdout))
 
     return pybot
 
@@ -39,7 +43,7 @@ def make_exebot(name: str) -> Callable[[dict[str, str]], bool]:
             [f"{BOT_DIR_LOC}/{name}.exe"],
             capture_output=True,
         )
-        return int(out.stdout)
+        return bool(int(out.stdout))
 
     return exebot
 
