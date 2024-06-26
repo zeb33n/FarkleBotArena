@@ -28,11 +28,16 @@ class GameState:
 
 def make_pybot(name: str) -> Callable[[bytes], bool]:
     def pybot(json: bytes) -> bool:
-        out = subprocess.run(
-            ["python", f"{BOT_DIR_LOC}/{name}.py", json],
-            capture_output=True,
-        )
-        return bool(int(out.stdout))
+        try:
+            out = subprocess.run(
+                ["python", f"{BOT_DIR_LOC}/{name}.py", json],
+                capture_output=True,
+                check=True
+            )
+            return int(out.stdout)
+        except subprocess.CalledProcessError as e:
+            print(e.stderr.decode())
+            return false
 
     return pybot
 
