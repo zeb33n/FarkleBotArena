@@ -22,14 +22,14 @@ class GameState:
     num_dice: int
     round_score: int
 
-    def to_json(self) -> str:
-        return json.dumps(asdict(self))
+    def to_json(self) -> bytes:
+        return bytes(json.dumps(asdict(self)).encode("utf-8"))
 
 
-def make_pybot(name: str) -> Callable[[dict[str, str]], bool]:
-    def pybot(json: dict[str, str]) -> bool:
+def make_pybot(name: bytes) -> Callable[[dict[str, str]], bool]:
+    def pybot(json: str) -> bool:
         out = subprocess.run(
-            ["python", f"{BOT_DIR_LOC}/{name}.py"],
+            ["python", f"{BOT_DIR_LOC}/{name}.py", json],
             capture_output=True,
         )
         return bool(int(out.stdout))
@@ -37,10 +37,10 @@ def make_pybot(name: str) -> Callable[[dict[str, str]], bool]:
     return pybot
 
 
-def make_exebot(name: str) -> Callable[[dict[str, str]], bool]:
-    def exebot(json: dict[str, str]) -> bool:
+def make_exebot(name: bytes) -> Callable[[dict[str, str]], bool]:
+    def exebot(json: str) -> bool:
         out = subprocess.run(
-            [f"{BOT_DIR_LOC}/{name}.exe"],
+            [f"{BOT_DIR_LOC}/{name}.exe", json],
             capture_output=True,
         )
         return bool(int(out.stdout))
@@ -92,7 +92,7 @@ class App:
         while True:
             for bot_name, run_bot in self.bots.items():
                 self.game_state.round_score = 0
-                while run_bot("json TODO"):
+                while run_bot(self.game_state.to_json()):
                     time.sleep(1)
                     print("\033[F" * 4)
                     print((" " * 50 + "\n") * 2)
