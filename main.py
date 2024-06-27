@@ -26,11 +26,19 @@ class GameState:
         return bytes(json.dumps(asdict(self)).encode("utf-8"))
 
 
-def make_pybot(name: str) -> Callable[[bytes], bool]:
-    def pybot(json: bytes) -> bool:
+def make_bot(name: str, extension: str) -> Callable[[bytes], bool]:
+    match extension:
+        case "py":
+            process = ["python", f"{BOT_DIR_LOC}/{name}.py"]
+        case "exe":
+            process = [f"{BOT_DIR_LOC}/{name}.exe"]
+        case _:
+            raise ValueError(f"bot {name} has unsupported extension .{extension}")
+
+    def bot(json: bytes) -> bool:
         try:
             out = subprocess.run(
-                ["python", f"{BOT_DIR_LOC}/{name}.py", json],
+                process + [json],
                 capture_output=True,
                 check=True,
             )
@@ -40,18 +48,7 @@ def make_pybot(name: str) -> Callable[[bytes], bool]:
             print(e.stderr.decode())
             return False
 
-    return pybot
-
-
-def make_exebot(name: str) -> Callable[[bytes], bool]:
-    def exebot(json: bytes) -> bool:
-        out = subprocess.run(
-            [f"{BOT_DIR_LOC}/{name}.exe", json],
-            capture_output=True,
-        )
-        return bool(int(out.stdout))
-
-    return exebot
+    return bot
 
 
 class App:
@@ -63,18 +60,7 @@ class App:
 
     def load_bots(self) -> dict[str, Callable[[bytes], bool]]:
         bot_info = tuple(botfile.rsplit(".", 1) for botfile in os.listdir(BOT_DIR_LOC))
-        out = {}
-        for bot_name, extension in bot_info:
-            match extension:
-                case "py":
-                    out[bot_name] = make_pybot(bot_name)
-                case "exe":
-                    out[bot_name] = make_exebot(bot_name)
-                case _:
-                    raise ValueError(
-                        f"bot {bot_name} has unsupported extension {extension}"
-                    )
-        return out
+        return {name: make_bot(name, extension) for name, extension in bot_info}
 
     def update_scores(self):
         magic = "\033[F"
