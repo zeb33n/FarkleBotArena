@@ -1,7 +1,7 @@
 CC=gcc 
 SRC_DIR = ../bot_src
 OBJ_DIR = ../bots
-_SRCS = bot under_500
+_SRCS = cbot under_500
 SRCS = $(patsubst %,$(SRC_DIR)/%,$(_SRCS))
 
 all: $(SRCS)

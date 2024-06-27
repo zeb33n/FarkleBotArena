@@ -32,12 +32,13 @@ def make_pybot(name: str) -> Callable[[bytes], bool]:
             out = subprocess.run(
                 ["python", f"{BOT_DIR_LOC}/{name}.py", json],
                 capture_output=True,
-                check=True
+                check=True,
             )
-            return int(out.stdout)
+            return bool(int(out.stdout))
+
         except subprocess.CalledProcessError as e:
             print(e.stderr.decode())
-            return false
+            return False
 
     return pybot
 
