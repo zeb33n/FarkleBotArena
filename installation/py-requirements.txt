@@ -1,0 +1,3 @@
+# put your bot python requirements in here 
+# e.g 
+# numpy==2.0.0 
