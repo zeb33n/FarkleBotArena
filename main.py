@@ -2,7 +2,9 @@ from collections.abc import Callable
 import random
 import time
 import os
-from dataclasses import dataclass
+import subprocess
+import json
+from dataclasses import asdict, dataclass
 
 # TODO
 # save write proper pybot exebot functions for calling the bots wiht jsons and capturing the outpur
@@ -11,6 +13,7 @@ from dataclasses import dataclass
 # make output pretty
 
 LINES = 3
+BOT_DIR_LOC = f'{__file__.rsplit("/", 1)[0]}/bots'
 
 
 @dataclass
@@ -19,19 +22,33 @@ class GameState:
     num_dice: int
     round_score: int
 
-
-def make_pybot(name: str) -> Callable[[dict[str, str]], bool]:
-    def pybot(json: dict[str, str]) -> bool:
-        return random.randint(0, 1)
-
-    return pybot
+    def to_json(self) -> bytes:
+        return bytes(json.dumps(asdict(self)).encode("utf-8"))
 
 
-def make_exebot(name: str) -> Callable[[dict[str, str]], bool]:
-    def exebot(json: dict[str, str]) -> bool:
-        return random.randint(0, 1)
+def make_bot(name: str, extension: str) -> Callable[[bytes], bool]:
+    match extension:
+        case "py":
+            process = ["python", f"{BOT_DIR_LOC}/{name}.py"]
+        case "exe":
+            process = [f"{BOT_DIR_LOC}/{name}.exe"]
+        case _:
+            raise ValueError(f"bot {name} has unsupported extension .{extension}")
 
-    return exebot
+    def bot(json: bytes) -> bool:
+        try:
+            out = subprocess.run(
+                process + [json],
+                capture_output=True,
+                check=True,
+            )
+            return bool(int(out.stdout))
+
+        except subprocess.CalledProcessError as e:
+            print(e.stderr.decode())
+            return False
+
+    return bot
 
 
 class App:
@@ -41,23 +58,9 @@ class App:
         self.initialise_screen()
         self.update_scores()
 
-    def load_bots(self) -> dict[str, Callable[[dict[str, str]], bool]]:
-        bot_info = tuple(
-            botfile.rsplit(".", 1)
-            for botfile in os.listdir(f'{__file__.rsplit("/", 1)[0]}/bots')
-        )
-        out = {}
-        for bot_name, extension in bot_info:
-            match extension:
-                case "py":
-                    out[bot_name] = make_pybot(bot_name)
-                case "exe":
-                    out[bot_name] = make_exebot(bot_name)
-                case _:
-                    raise ValueError(
-                        f"bot {bot_name} has unsupported extension {extension}"
-                    )
-        return out
+    def load_bots(self) -> dict[str, Callable[[bytes], bool]]:
+        bot_info = tuple(botfile.rsplit(".", 1) for botfile in os.listdir(BOT_DIR_LOC))
+        return {name: make_bot(name, extension) for name, extension in bot_info}
 
     def update_scores(self):
         magic = "\033[F"
@@ -81,13 +84,15 @@ class App:
         while True:
             for bot_name, run_bot in self.bots.items():
                 self.game_state.round_score = 0
-                while run_bot("json TODO"):
-                    time.sleep(1)
+                while run_bot(self.game_state.to_json()):
+                    self.game_state.round_score += 100
+                    print("\033[F" * 4)
+                    print((" " * 50 + "\n") * 2)
                     print("\033[F" * 4)
                     print(f"{bot_name}'s turn", flush=True)
                     print(f"current score: {self.game_state.round_score}")
                     print(f"rolled {self.roll_dice()}")
-                    self.game_state.round_score += 100
+                    time.sleep(1)
                 else:
                     self.game_state.bots[bot_name] += self.game_state.round_score
                     self.update_scores()
