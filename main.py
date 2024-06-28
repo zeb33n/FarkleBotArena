@@ -6,6 +6,7 @@ import os
 import subprocess
 import json
 from dataclasses import asdict, dataclass
+from farkle_scorer import calculate_score
 
 # TODO
 # save write proper pybot exebot functions for calling the bots wiht jsons and capturing the outpur
@@ -77,10 +78,17 @@ class App:
             for bot_name, run_bot in self.bots.items():
                 self.game_state.round_score = 0
                 while run_bot(self.game_state.to_bot()):
-                    self.game_state.round_score += 100
                     self.game_state.turn = bot_name
                     self.game_state.roll = self.roll_dice()
+                    score, self.game_state.num_dice = calculate_score(
+                        self.game_state.roll
+                    )
+                    self.game_state.round_score += score
                     self.pipe_client.pipe(self.game_state.to_tui())
+                    if score == 0:
+                        break
+                    if self.game_state.num_dice == 0:
+                        self.game_state.num_dice = 6
                     time.sleep(1)
                 else:
                     self.game_state.bots[bot_name] += self.game_state.round_score
