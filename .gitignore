@@ -1,2 +1,3 @@
 *.exe
 bots/*.exe
+__pycache__
