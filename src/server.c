@@ -7,7 +7,12 @@
 
 char *read_pipe(int fd) {
   static char out[256] = {0};
-  int _ = read(fd, out, 255);
+  int bytes_read = read(fd, out, 255);
+  if (bytes_read < 0) {
+    perror("read");
+    return NULL;
+  }
+  printf("Bytes read: %d\n", bytes_read);
   return out;
 }
 
@@ -22,13 +27,15 @@ char *read_line(int fd) {
     out[i] = c;
     i++;
   }
+
+  printf("size of out: %lu\n", sizeof(out));
   return out;
 }
 
 int main() {
   int pipefd = open("../pipe", O_RDONLY);
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-  struct sockaddr address = {AF_INET, htons(5431), 0};
+  struct sockaddr address = {AF_INET, htons(9999), 0};
 
   int true = 1;
 
@@ -71,11 +78,10 @@ int main() {
     char buffer[256] = {0};
     poll(fds, 2, 50000);
     if (fds[0].revents & POLLIN) {
-      char *game_state = read_line(pipefd);
-      printf("sending\n");
-      game_state = "game_state";
-      printf("%s\n", game_state);
-      long send_err = send(socketfd, game_state, 255, 0);
+      static char out[256] = {0};
+      int bytes_read = read(pipefd, out, 255);
+      printf("%lu\n", sizeof(out)); 
+      long send_err = send(clientfd, out, 255, 0);
       if (send_err == -1) {
         perror("Send Error");
       }

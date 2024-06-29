@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 int main() {
+  int pipefd = open("../pipe", O_RDONLY);
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-  struct sockaddr_in address = {AF_INET, htons(9999), 0};
+  struct sockaddr address = {AF_INET, htons(9999), 0};
 
   bind(sockfd, &address, sizeof(address));
 
@@ -16,7 +18,7 @@ int main() {
   int clientfd = accept(sockfd, 0, 0);
 
   // stdin - 0
-  struct pollfd fds[2] = {{0, POLLIN, 0}, {clientfd, POLLIN, 0}};
+  struct pollfd fds[2] = {{pipefd, POLLIN, 0}, {clientfd, POLLIN, 0}};
 
   for (;;) {
     char buffer[256] = {0};
