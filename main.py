@@ -18,7 +18,6 @@ from farkle_scorer import calculate_score
 LINES = 3
 BOT_DIR_LOC = f'{__file__.rsplit("/", 1)[0]}/bots'
 
-atexit.register(PipeClient.cleanup())
 
 @dataclass
 class GameState:
@@ -66,6 +65,7 @@ class App:
     def __init__(self):
         self.bots = self.load_bots()
         self.pipe_client = PipeClient()
+        atexit.register(self.pipe_client.cleanup)
         self.game_state = GameState({name: 0 for name in self.bots}, 6, 0, [], "")
 
     def load_bots(self) -> dict[str, Callable[[bytes], bool]]:
