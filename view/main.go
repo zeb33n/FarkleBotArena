@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -19,7 +19,7 @@ type Player struct {
 type GameState struct {
 	players      []Player
 	dice         []int
-	CurrentScore []int
+	CurrentScore int
 }
 
 type model struct {
@@ -59,7 +59,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	s := "Farkle Arena \n"
 	for i, player := range m.GameState.players {
-		s += fmt.Sprintf("Name: %s, Total Score: %v, Round Score: %v \n", player.name, player.score, m.GameState.CurrentScore[i])
+		s += fmt.Sprintf("Name: %s, Total Score: %v, Round Score: %v \n", player.name, player.score, m.GameState.CurrentScore)
 		s += strconv.Itoa(m.GameState.dice[i])
 	}
 
@@ -68,21 +68,52 @@ func (m model) View() string {
 
 func main() {
 
-	state := flag.String("stateBytes", "", "byte string for current game state")
-
-	var gs GameState
-
-	if err := json.Unmarshal([]byte(*state), &gs); err != nil {
-		//slog
-		panic(fmt.Sprintf("couldn't load state %s", err))
+	pipeName := "game_pipe"
+	file, err := os.OpenFile(pipeName, os.O_RDONLY, 0)
+	if err != nil {
+		// could manage more gracefully with maybe a "waiting for game connection timer"
+		panic(err)
 	}
 
-	p := tea.NewProgram(initialModel(&gs))
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("err %s", err)
-		os.Exit(1)
-	}
+	fmt.Println("pipe open")
 
-	p.Kill()
+	defer file.Close()
+
+	r := bufio.NewReader(file)
+	for {
+		line, err := r.ReadBytes('\n')
+		if err != nil {
+			// actually once we have finished reading from the buffer we don't
+			// neccassarily want to exit because the game will be calculated
+			// quicker than we care to render it
+
+			// so we want to read all the game data into the buffer, but display
+			// at our own pace and exit when we decide pls
+			os.Exit(0)
+		}
+
+		var welcome string
+		if err := json.Unmarshal(line, &welcome); err != nil {
+			panic(err)
+		}
+		fmt.Println(welcome)
+
+		// var gs GameState
+
+		// if err := json.Unmarshal(line, &gs); err != nil {
+		// 	//slog
+		// 	panic(fmt.Sprintf("couldn't load state %s", err))
+		// }
+		// fmt.Println(gs)
+
+		// p := tea.NewProgram(initialModel(&gs))
+		// if _, err := p.Run(); err != nil {
+		// 	fmt.Printf("err %s", err)
+		// 	os.Exit(1)
+		// }
+
+		// p.Kill()
+
+	}
 
 }
