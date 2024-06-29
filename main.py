@@ -2,6 +2,7 @@ from collections.abc import Callable
 from pipe_client import PipeClient
 import random
 import time
+import atexit
 import os
 import subprocess
 import json
@@ -17,6 +18,7 @@ from farkle_scorer import calculate_score
 LINES = 3
 BOT_DIR_LOC = f'{__file__.rsplit("/", 1)[0]}/bots'
 
+atexit.register(PipeClient.cleanup())
 
 @dataclass
 class GameState:
