@@ -5,17 +5,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-// char *read_pipe(int fd) {
-//   static char out[256] = {0};
-//   int bytes_read = read(fd, out, 255);
-//   if (bytes_read < 0) {
-//     perror("read");
-//     return NULL;
-//   }
-//   out[bytes_read] = '\0';
-//   return out;
-// }
-
 int send_game_state(int pipefd, int clientfd) {
   char game_state[256] = {0};
   int bytes_read = read(pipefd, game_state, 255);
@@ -28,25 +17,30 @@ int send_game_state(int pipefd, int clientfd) {
   long send_err = send(clientfd, game_state, 255, 0);
   if (send_err == -1) {
     perror("Send Error");
-    return 1;
+    return -1;
   }
 
   return 0;
 }
 
 int recv_client_input(int clientfd) {
-  char buffer[256] = {0};
+  char buffer[1] = {0};
+  int outfd = open("not sure yet", O_WRONLY);
   if (recv(clientfd, buffer, 1, 0) == 0) {
     printf("exiting\n");
+    return 1;
+  }
+  int write_err = write(outfd, buffer, 1);
+  if (write_err != 1) {
+    perror("Write Error");
     return -1;
   }
-  printf("%s\n", buffer);
-  return 0;  
+  return 0;
 }
 
 int register_player();
-
-int pipe_player();
+// cp script into dir
+// make fifo for script
 
 int main() {
   int pipefd = open("../pipe", O_RDONLY);
@@ -82,9 +76,9 @@ int main() {
       }
 
     } else if (fds[1].revents & POLLIN) {
-      int exit = recv_client_input(clientfd); 
+      int exit = recv_client_input(clientfd);
       if (exit) {
-        return 0; 
+        return exit;
       }
     }
   }
