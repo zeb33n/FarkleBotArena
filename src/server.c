@@ -42,6 +42,12 @@ int register_player();
 // cp script into dir
 // make fifo for script
 
+// player script when turned on needs to monitor for latest input. 
+// maybe add a turn counter so it know exactly what one. 
+// could be important with latency. 
+
+// block players from sending when its not there turn 
+
 int main() {
   int pipefd = open("../pipe", O_RDONLY);
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
