@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -11,6 +12,8 @@ type Player struct {
 	Name  string `json:bot_name`
 	Score int    `json:round_score`
 }
+
+// If I end up using Byte[] I should decode the strings into byte slices to save one copy
 
 type GameState struct {
 	Players    []Player `json:bots`
@@ -29,12 +32,12 @@ func InitialBoardModel() BoardModel {
 	// await a connection from the client
 	defaultGameState := GameState{
 		Players: []Player{
-			{Name: "Player", Score: 0},
-			{Name: "reallylongplayernamewhatthe", Score: 0},
+			{Name: "hello", Score: 0},
+			{Name: "22", Score: 0},
 			{Name: "player 3", Score: 0},
 			{Name: "player 4", Score: 0},
 		},
-		Numdice:    6,
+		Numdice:    1,
 		RoundScore: 00000,
 		Roll:       []int{},
 		Turn:       "waiting for connections",
@@ -77,47 +80,36 @@ func BuildBoard(State GameState) string {
 	// The 'game section' (from the score down will remain the same mostly (depending on dice numbers) A reduction in the number of dice will not cause the arena to become smaller)
 	// but the dice need to be centreed
 
-	lines := []string{}
+	boardWidth := 71
+	boardWidth += 0
 
-	var baseHeader string = `/---------------------------------------------\`
+	formattedNames := make([]string, len(State.Players))
 
-	var leftName string
-	var rightName string
-
-	if len(State.Players[0].Name) > 12 {
-		fmt.Printf("Max username length is 11. %s is too long", leftName)
-		leftName = State.Players[0].Name[:12]
-	} else {
-		leftName = State.Players[0].Name
-		for i := 0; i < (11 - len(leftName)); i++ {
-			leftName += " "
+	for i, player := range State.Players {
+		if len(player.Name) > 12 {
+			formattedNames[i] = player.Name[:12]
+		} else {
+			formattedNames[i] = fmt.Sprintf("%12s", State.Players[0].Name)
 		}
 	}
 
-	if len(State.Players[1].Name) > 12 {
-		fmt.Printf("Max username length is 11. %s is too long", rightName)
-		rightName = State.Players[1].Name[:12]
-	} else {
-		rightName = State.Players[1].Name
-		for i := 0; i < (12 - len(rightName)); i++ {
-			rightName += " "
-		}
-	}
+	var sb strings.Builder
+	// I dont understand why -12 isn't flipping the indent for the string>?!??!?!
+	sb.WriteString(fmt.Sprintf((`%12s/---------------------------------------------\%-12s`), formattedNames[0], formattedNames[1]) + "\n")
+	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.` + "\n")
+	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, State.Players[0].Score, State.Players[1].Score) + "\n")
 
-	headerString := leftName + baseHeader + rightName
+	// diceHead := (strings.TrimRight(strings.Repeat(fmt.Sprintf("%32s|=====| ", " "), State.Numdice), " "))
 
-	titleLine := `.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.`
+	// sb.WriteString(diceHead)
 
-	lines = append(lines, headerString, titleLine)
-
-	baseString := ""
-
-	for _, line := range lines {
-		baseString += (line + "\n")
+	switch State.Numdice {
+	case 1:
+		sb.WriteString(fmt.Sprintf("|%s|", (strings.TrimRight(strings.Repeat(fmt.Sprintf("%32s|=====|%-32s", " ", " "), State.Numdice), " ")))) // 7
 
 	}
 
-	return baseString
+	return sb.String()
 
 }
 
