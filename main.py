@@ -62,6 +62,7 @@ def make_bot(name: str, extension: str) -> Callable[[bytes], bool]:
 
 class App:
     def __init__(self):
+        input("press enter to start game\n")
         self.bots = self.load_bots()
         self.pipe_client = PipeClient()
         self.game_state = GameState({name: 0 for name in self.bots}, 6, 0, [], "")
