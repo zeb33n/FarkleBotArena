@@ -20,7 +20,7 @@ char *read_server(int socketfd) {
 
 int main() {
   int socketfd = socket(AF_INET, SOCK_STREAM, 0); //what does AF_INET // what does 0 mean here
-  struct sockaddr address = {AF_INET, htons(9998), 0};
+  struct sockaddr address = {AF_INET, htons(8998), 0};
 
   int con_err = connect(socketfd, &address, sizeof(address));
   if (con_err == -1) {

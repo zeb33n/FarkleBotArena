@@ -1,9 +1,15 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+struct Player {
+  char num;
+  int clientfd;
+};
 
 int send_game_state(int pipefd, int clientfd) {
   char game_state[256] = {0};
@@ -29,27 +35,74 @@ int recv_client_input(int clientfd) {
     printf("exiting\n");
     return 1;
   }
-  int playerfd = open("../player0", O_WRONLY); 
+  if (*buffer == 'q') {
+    printf("exiting\n");
+    return 1;
+  }
+  int playerfd = open("../player0", O_WRONLY);
   write(playerfd, buffer, 1);
   printf("%s", buffer);
-  close(playerfd); 
+  close(playerfd);
   return 0;
 }
 
-int register_player();
-// cp script into dir
-// make fifo for script
+void cp_file(char *source, char *target) {
+  int srcfd = open(source, O_RDONLY);
+  int tgtfd = open(target, O_CREAT | O_WRONLY, 0777);
+  char buffer[4096];
 
-// player script when turned on needs to monitor for latest input. 
-// maybe add a turn counter so it know exactly what one. 
-// could be important with latency. 
+  for (;;) {
+    int n = read(srcfd, buffer, 4096);
+    if (n < 0) {
+      perror("Error reading file");
+      exit(n);
+    } else if (n == 0) {
+      break;
+    }
 
-// block players from sending when its not there turn 
+    int write_err = write(tgtfd, buffer, n);
+    if (write_err == -1) {
+      perror("Write Error:");
+      exit(-1);
+    }
+  }
+  close(srcfd);
+  close(tgtfd);
+}
+
+void register_player(char num) {
+  char target[] = "../bots/player0.py";
+  target[14] = num;
+  cp_file("../player.py", target);
+}
+
+// TODO! use fork for multiple connections!
+struct Player register_players(int socketfd) {
+  int clientfd = accept(socketfd, 0, 0);
+  if (clientfd == -1) {
+    perror("accept error");
+  }
+  printf("connection recieved\n");
+  register_player('0');
+  char msg[] = "waiting for game to start";
+  long send_err = send(clientfd, msg, sizeof(msg), 0);
+  if (send_err == -1) {
+    perror("Send Error");
+    exit(-1);
+  }
+  struct Player player = {'0', clientfd};
+  return player;
+}
+
+// pipe into file with player tag
+
+// players join into lobby
+// when lobby is populated send message to game loop to start
+// ie when all players have readyed
 
 int main() {
-  int pipefd = open("../pipe", O_RDONLY);
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-  struct sockaddr address = {AF_INET, htons(9998), 0};
+  struct sockaddr address = {AF_INET, htons(8998), 0};
 
   int bind_err = bind(socketfd, &address, sizeof(address));
   if (bind_err == -1) {
@@ -63,31 +116,27 @@ int main() {
     return 1;
   }
 
-  int clientfd = accept(socketfd, 0, 0);
-  if (clientfd == -1) {
-    perror("accept error");
-    return 1;
-  }
-  printf("connection recieved\n");
+  struct Player player = register_players(socketfd); 
+  int pipefd = open("../pipe", O_RDONLY);
 
-  struct pollfd fds[2] = {{pipefd, POLLIN, 0}, {clientfd, POLLIN, 0}};
+  struct pollfd fds[2] = {{pipefd, POLLIN, 0}, {player.clientfd, POLLIN, 0}};
   for (;;) {
     poll(fds, 2, 50000);
     if (fds[0].revents & POLLIN) {
-      int gs_err = send_game_state(pipefd, clientfd);
+      int gs_err = send_game_state(pipefd, player.clientfd);
       if (gs_err == -1) {
         return -1;
       }
 
     } else if (fds[1].revents & POLLIN) {
-      int exit = recv_client_input(clientfd);
+      int exit = recv_client_input(player.clientfd);
       if (exit) {
         return exit;
       }
     }
   }
 
-  close(clientfd);
+  close(player.clientfd);
   close(socketfd);
 
   return 0;
