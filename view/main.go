@@ -32,14 +32,14 @@ func InitialBoardModel() BoardModel {
 	// await a connection from the client
 	defaultGameState := GameState{
 		Players: []Player{
-			{Name: "hello", Score: 0},
+			{Name: "something", Score: 0},
 			{Name: "22", Score: 0},
 			{Name: "player 3", Score: 0},
 			{Name: "player 4", Score: 0},
 		},
-		Numdice:    1,
+		Numdice:    4,
 		RoundScore: 00000,
-		Roll:       []int{},
+		Roll:       []int{1, 2, 3, 4, 5, 6},
 		Turn:       "waiting for connections",
 	}
 
@@ -50,16 +50,6 @@ func InitialBoardModel() BoardModel {
 }
 
 func BuildBoard(State GameState) string {
-
-	// need to find a way of adding the string in insert mode.
-	// the best way for this might be add this string into 2d list of strings
-	// which each element in the list representing an element on the ui
-	// this would introduce name length caps though?!
-	// either way then we could add rows and columns for the ui and each line stored
-	// but it does feel like that makes it more complex
-	// but mybe opens up more interactivity if needed in the future
-
-	// or we need to give in and create some kind of string generator because %s will displace the string by len
 
 	// board := (`
 
@@ -77,40 +67,50 @@ func BuildBoard(State GameState) string {
 	// names can be 11 characters long. Names under 11 characters will be printed from left or right respectively. len(name) - 11 amount of whitespaces will be added on to the end (or beginning)
 	// of each name to build the first string
 
-	// The 'game section' (from the score down will remain the same mostly (depending on dice numbers) A reduction in the number of dice will not cause the arena to become smaller)
-	// but the dice need to be centreed
-
-	boardWidth := 71
-	boardWidth += 0
-
-	formattedNames := make([]string, len(State.Players))
-
-	for i, player := range State.Players {
-		if len(player.Name) > 12 {
-			formattedNames[i] = player.Name[:12]
-		} else {
-			formattedNames[i] = fmt.Sprintf("%12s", State.Players[0].Name)
-		}
-	}
-
 	var sb strings.Builder
-	// I dont understand why -12 isn't flipping the indent for the string>?!??!?!
-	sb.WriteString(fmt.Sprintf((`%12s/---------------------------------------------\%-12s`), formattedNames[0], formattedNames[1]) + "\n")
+	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, "player one", "somestr"))
+	sb.WriteString("\n")
 	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.` + "\n")
-	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, State.Players[0].Score, State.Players[1].Score) + "\n")
-
-	// diceHead := (strings.TrimRight(strings.Repeat(fmt.Sprintf("%32s|=====| ", " "), State.Numdice), " "))
-
-	// sb.WriteString(diceHead)
-
-	switch State.Numdice {
-	case 1:
-		sb.WriteString(fmt.Sprintf("|%s|", (strings.TrimRight(strings.Repeat(fmt.Sprintf("%32s|=====|%-32s", " ", " "), State.Numdice), " ")))) // 7
-
-	}
+	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, State.Players[0].Score, State.Players[1].Score))
+	sb.WriteString("\n")
+	sb.WriteString(buildDice(State.Roll))
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf(`|%11d\---------------------------------------------/%-11d|`, State.Players[2].Score, State.Players[3].Score))
+	sb.WriteString("\n")
+	// will change to current score but cba with the spacing this second
+	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.` + "\n")
+	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, "plyr3", "somestr"))
 
 	return sb.String()
 
+}
+
+func buildDice(dice []int) string {
+	boardWidth := 71
+
+	var sb strings.Builder
+
+	diceHeader := strings.Repeat("|=====|", len(dice))
+	diceBodyStr := ""
+	for _, die := range dice {
+		diceBodyStr += fmt.Sprintf("|  %d  |", die)
+	}
+
+	//middle dice placement = middle - 3?
+	leftPadding := ((boardWidth / 2) - (len(diceHeader) / 2))
+	// rightPadding := (boardWidth - (leftPadding - 4))
+
+	fPosition := fmt.Sprintf("%*s|=====|", leftPadding, " ")
+
+	rPadding := (boardWidth - len(fPosition)) - 2 // -2 accounts for the two empty strings we add ??
+
+	sb.WriteString(fmt.Sprintf("|%s|", (fmt.Sprintf("%*s%s%*s", leftPadding, " ", diceHeader, rPadding, " "))))
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf("|%s|", (fmt.Sprintf("%*s%s%*s", leftPadding, " ", diceBodyStr, rPadding, " "))))
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf("|%s|", (fmt.Sprintf("%*s%s%*s", leftPadding, " ", diceHeader, rPadding, " "))))
+
+	return sb.String()
 }
 
 func (m BoardModel) Init() tea.Cmd {
@@ -133,22 +133,6 @@ func (m BoardModel) View() string {
 }
 
 func main() {
-	// fifo := "../pipe"
-
-	// fr, err := os.OpenFile(fifo, os.O_RDONLY, os.ModeNamedPipe)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-
-	// defer fr.Close()
-
-	// data, err := io.ReadAll(fr)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
-	// fmt.Println(string(data))
 
 	m := InitialBoardModel()
 	p := tea.NewProgram(m)
