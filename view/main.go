@@ -20,18 +20,18 @@ TODO:
 */
 
 type Player struct {
-	Name  string `json: name`
-	Score int    `json:score`
+	Name  string `json:"name"`
+	Score int    `json:"score"`
 }
 
 // If I end up using Byte[] I should decode the strings into byte slices to save one copy
 
 type GameState struct {
-	Players    []Player `json:bots`
-	Numdice    int      `json:num_dice`
-	RoundScore int      `json:round_score`
-	Roll       []int    `json:roll`
-	Turn       string   `json:turn`
+	Players    []Player `json:"bots"`
+	Numdice    int      `json:"num_dice"`
+	RoundScore int      `json:"round_score"`
+	Roll       []int    `json:"roll"`
+	Turn       string   `json:"turn"`
 }
 
 type tcpClient struct {
@@ -114,11 +114,11 @@ func BuildBoard(State GameState) string {
 	sb.WriteString("\n")
 	sb.WriteString(buildDice(State.Roll))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf(`|%11d\---------------------------------------------/%-11d|`, State.Players[2].Score, State.Players[3].Score))
+	sb.WriteString(fmt.Sprintf(`|%11d\---------------------------------------------/%-11d|`, State.Players[2].Score, State.Players[2].Score))
 	sb.WriteString("\n")
 	// being lazy, needs padding, maybe need a padding func
 	sb.WriteString(`.=-=-=-=-=-=\              Press R or P               /=-=-=-=-=-=.` + "\n")
-	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, State.Players[2].Name, State.Players[3].Name))
+	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, State.Players[2].Name, State.Players[2].Name))
 
 	return sb.String()
 
@@ -169,13 +169,14 @@ func main() {
 			continue
 		}
 		if string(response) == welcomeMessage {
-			fmt.Print(string(response))
+			fmt.Printf("%s\n", (string(response)))
 		} else {
 
 			if err := json.Unmarshal(response, &gs); err != nil {
 				fmt.Printf("failed decoding %s", err)
 			}
-			fmt.Print(gs)
+
+			fmt.Print(BuildBoard(gs))
 
 		}
 
