@@ -1,12 +1,26 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	rand "math/rand"
+	"net"
 	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+/*
+
+TODO:
+[] Change playercolour based on turn
+[] tcp client
+[] figure how we want the board to be represented to best allow access and change in the view
+   during the loop of the game
+[]
+
+*/
 
 type Player struct {
 	Name  string `json:bot_name`
@@ -25,6 +39,7 @@ type GameState struct {
 
 type BoardModel struct {
 	game GameState
+	roll int
 }
 
 func InitialBoardModel() BoardModel {
@@ -68,7 +83,7 @@ func BuildBoard(State GameState) string {
 	// of each name to build the first string
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, "player one", "somestr"))
+	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, State.Players[0].Name, State.Players[1].Name))
 	sb.WriteString("\n")
 	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.` + "\n")
 	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, State.Players[0].Score, State.Players[1].Score))
@@ -77,9 +92,9 @@ func BuildBoard(State GameState) string {
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf(`|%11d\---------------------------------------------/%-11d|`, State.Players[2].Score, State.Players[3].Score))
 	sb.WriteString("\n")
-	// will change to current score but cba with the spacing this second
-	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.` + "\n")
-	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, "plyr3", "somestr"))
+	// being lazy, needs padding, maybe need a padding func
+	sb.WriteString(`.=-=-=-=-=-=\              Press R or P               /=-=-=-=-=-=.` + "\n")
+	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, State.Players[2].Name, State.Players[3].Name))
 
 	return sb.String()
 
@@ -113,16 +128,76 @@ func buildDice(dice []int) string {
 	return sb.String()
 }
 
+type tcpError struct {
+	err error
+}
+
+func (t tcpError) Error() string {
+	return t.err.Error()
+}
+
+type stateResponse struct{ res GameState }
+
+func connTCP() tea.Msg {
+	conn, err := net.Dial("tcp", "localhost:8080")
+	if err != nil {
+		return tcpError{err: err}
+	}
+	defer conn.Close()
+
+	buffer := make([]byte, 1024)
+
+	var gs GameState
+
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			return tcpError{err: err}
+		}
+
+		if err := json.Unmarshal(buffer[:n], &gs); err != nil {
+			return nil
+		}
+		return stateResponse{res: gs}
+	}
+
+}
+
 func (m BoardModel) Init() tea.Cmd {
+	return connTCP
+
+	// all i/o (tcp connections etc) need to be returned by the init function
+	// all cmds are called by the tea runtime when needed.
+	// cmds run in routines andd sent to the update function for handling.
+
+	// ares are functions that dont take args and return a msg of type any
+	// if your commands need args you can include them in a closure
+
 	return nil
 }
 
 func (m BoardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// The update function wants to know how to deal with the commands we
+	// made and returned from init based on the message we expect back from the
+	// commands
+
+	// so we can do something like instead of having default players we could have
+	// "awaiting conn" and then the update changes the model (board string) and
+	// that will trigger the view to update on tcp connection
+
+	// also need to add in some kind of button to roll the dice
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+
+		case "r":
+			m.game.Roll[0] = rand.Intn(6)
+			return m, nil
+		case "p":
+			// send message saying we've passed
 		}
 	}
 	return m, nil
