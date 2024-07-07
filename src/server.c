@@ -102,7 +102,7 @@ struct Player register_players(int socketfd) {
 
 int main() {
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-  struct sockaddr address = {AF_INET, htons(8998), 0};
+  struct sockaddr_in address = {AF_INET, htons(8990), INADDR_ANY};
 
   int bind_err = bind(socketfd, &address, sizeof(address));
   if (bind_err == -1) {
