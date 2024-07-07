@@ -1,42 +1,108 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-char *read_pipe(int fd) {
-  static char out[256] = {0};
-  int _ = read(fd, out, 255);
-  return out;
+struct Player {
+  char num;
+  int clientfd;
+};
+
+int send_game_state(int pipefd, int clientfd) {
+  char game_state[256] = {0};
+  int bytes_read = read(pipefd, game_state, 255);
+  if (bytes_read < 0) {
+    perror("read");
+    return -1;
+  }
+  game_state[bytes_read] = '\0';
+
+  long send_err = send(clientfd, game_state, 255, 0);
+  if (send_err == -1) {
+    perror("Send Error");
+    return -1;
+  }
+
+  return 0;
 }
 
-char *read_line(int fd) {
-  char c = 0;
-  int i = 0;
-  static char out[256];
-  while (read(fd, &c, 1) != 0) {
-    if (c == '\n') {
+int recv_client_input(int clientfd) {
+  char buffer[1] = {0};
+  if (recv(clientfd, buffer, 1, 0) == 0) {
+    printf("exiting\n");
+    return 1;
+  }
+  if (*buffer == 'q') {
+    printf("exiting\n");
+    return 1;
+  }
+  int playerfd = open("../player0", O_WRONLY);
+  write(playerfd, buffer, 1);
+  printf("%s", buffer);
+  close(playerfd);
+  return 0;
+}
+
+void cp_file(char *source, char *target) {
+  int srcfd = open(source, O_RDONLY);
+  int tgtfd = open(target, O_CREAT | O_WRONLY, 0777);
+  char buffer[4096];
+
+  for (;;) {
+    int n = read(srcfd, buffer, 4096);
+    if (n < 0) {
+      perror("Error reading file");
+      exit(n);
+    } else if (n == 0) {
       break;
     }
-    out[i] = c;
-    i++;
+
+    int write_err = write(tgtfd, buffer, n);
+    if (write_err == -1) {
+      perror("Write Error:");
+      exit(-1);
+    }
   }
-  return out;
+  close(srcfd);
+  close(tgtfd);
 }
 
+void register_player(char num) {
+  char target[] = "../bots/player0.py";
+  target[14] = num;
+  cp_file("../player.py", target);
+}
+
+// TODO! use fork for multiple connections!
+struct Player register_players(int socketfd) {
+  int clientfd = accept(socketfd, 0, 0);
+  if (clientfd == -1) {
+    perror("accept error");
+  }
+  printf("connection recieved\n");
+  register_player('0');
+  char msg[] = "waiting for game to start";
+  long send_err = send(clientfd, msg, sizeof(msg), 0);
+  if (send_err == -1) {
+    perror("Send Error");
+    exit(-1);
+  }
+  struct Player player = {'0', clientfd};
+  return player;
+}
+
+// pipe into file with player tag
+
+// players join into lobby
+// when lobby is populated send message to game loop to start
+// ie when all players have readyed
+
 int main() {
-  int pipefd = open("../pipe", O_RDONLY);
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-  struct sockaddr address = {AF_INET, htons(5431), 0};
-
-  int true = 1;
-
-  // int opt_err = setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &true,
-  // sizeof(int)); if (opt_err == -1) {
-  //   perror("opt_err");
-  //   return 1;
-  // }
+  struct sockaddr address = {AF_INET, htons(8998), 0};
 
   int bind_err = bind(socketfd, &address, sizeof(address));
   if (bind_err == -1) {
@@ -50,46 +116,27 @@ int main() {
     return 1;
   }
 
-  // struct pollfd pipefds[1] = {{pipefd, POLLIN, 0}};
-  // for(;;){
-  //   poll(pipefds, 1, 50000);
-  //   if (pipefds[0].revents & POLLIN) {
-  //     char *game_state = read_pipe(pipefd);
-  //     printf("%s\n", game_state);
-  //   }
-  // }
+  struct Player player = register_players(socketfd);
+  int pipefd = open("../pipe", O_RDONLY);
 
-  int clientfd = accept(socketfd, 0, 0);
-  if (clientfd == -1) {
-    perror("accept error");
-    return 1;
-  }
-  printf("connection recieved\n");
-
-  struct pollfd fds[2] = {{pipefd, POLLIN, 0}, {clientfd, POLLIN, 0}};
+  struct pollfd fds[2] = {{pipefd, POLLIN, 0}, {player.clientfd, POLLIN, 0}};
   for (;;) {
-    char buffer[256] = {0};
     poll(fds, 2, 50000);
     if (fds[0].revents & POLLIN) {
-      char *game_state = read_line(pipefd);
-      printf("sending\n");
-      game_state = "game_state";
-      printf("%s\n", game_state);
-      long send_err = send(socketfd, game_state, 255, 0);
-      if (send_err == -1) {
-        perror("Send Error");
+      int gs_err = send_game_state(pipefd, player.clientfd);
+      if (gs_err == -1) {
+        return -1;
       }
 
     } else if (fds[1].revents & POLLIN) {
-      if (recv(clientfd, buffer, 1, 0) == 0) {
-        printf("exiting\n");
-        return 0;
+      int exit = recv_client_input(player.clientfd);
+      if (exit) {
+        return exit;
       }
-      printf("%s\n", buffer);
     }
   }
 
-  close(clientfd);
+  close(player.clientfd);
   close(socketfd);
 
   return 0;
