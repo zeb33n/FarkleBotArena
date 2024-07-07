@@ -33,7 +33,9 @@ class GameState:
         return bytes(json.dumps(out_json).encode("utf-8"))
 
     def to_tui(self) -> str:
-        return json.dumps(asdict(self))
+        dic = asdict(self)
+        dic["bots"] = [{"name": k, "score": v} for k,v in dic["bots"].items()]
+        return json.dumps(dic)
 
 
 def make_bot(name: str, extension: str) -> Callable[[bytes], bool]:
