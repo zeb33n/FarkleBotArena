@@ -63,6 +63,7 @@ def make_bot(name: str, extension: str) -> Callable[[bytes], bool]:
 
 class App:
     def __init__(self):
+        input("press enter to start game\n")
         self.bots = self.load_bots()
         self.pipe_client = PipeClient()
         atexit.register(self.pipe_client.cleanup)
@@ -88,6 +89,7 @@ class App:
                     self.game_state.round_score += score
                     self.pipe_client.pipe(self.game_state.to_tui())
                     if score == 0:
+                        self.game_state.num_dice = 6
                         break
                     if self.game_state.num_dice == 0:
                         self.game_state.num_dice = 6
