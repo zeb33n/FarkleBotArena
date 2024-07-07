@@ -3,12 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	rand "math/rand"
+	"log"
 	"net"
 	"os"
 	"strings"
-
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 /*
@@ -19,17 +17,11 @@ TODO:
 [] figure how we want the board to be represented to best allow access and change in the view
    during the loop of the game
 []
-
-<<<<<<< Updated upstream
 */
-=======
-func main() {
-	fifo := "../tmp/pipe"
->>>>>>> Stashed changes
 
 type Player struct {
-	Name  string `json:bot_name`
-	Score int    `json:round_score`
+	Name  string `json: name`
+	Score int    `json:score`
 }
 
 // If I end up using Byte[] I should decode the strings into byte slices to save one copy
@@ -42,9 +34,51 @@ type GameState struct {
 	Turn       string   `json:turn`
 }
 
+type tcpClient struct {
+	conn net.Conn
+}
+
+func NewTCPClient() (*tcpClient, error) {
+
+	conn, err := net.Dial("tcp", "localhost:8990")
+	if err != nil {
+		return &tcpClient{}, err
+	}
+	return &tcpClient{conn: conn}, nil
+
+}
+
+func (c tcpClient) Read() ([]byte, error) {
+	buffer := make([]byte, 256)
+	n, err := c.conn.Read(buffer)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// var gs GameState
+
+	// if err := json.Unmarshal(buffer[:n], &gs); err != nil {
+	// 	return GameState{}, err
+	// }
+
+	cleanedBuff := []byte{}
+
+	for _, b := range buffer[:n] {
+		if !(b == 0) {
+			cleanedBuff = append(cleanedBuff, b)
+		} else {
+			break
+		}
+	}
+
+	return cleanedBuff, nil
+
+}
+
 type BoardModel struct {
-	game GameState
-	roll int
+	game   GameState
+	screen string
+	// TcpModel tcpClient
 }
 
 func InitialBoardModel() BoardModel {
@@ -64,28 +98,13 @@ func InitialBoardModel() BoardModel {
 	}
 
 	return BoardModel{
-		game: defaultGameState,
+		game:   defaultGameState,
+		screen: BuildBoard(defaultGameState),
 	}
 
 }
 
 func BuildBoard(State GameState) string {
-
-	// board := (`
-
-	//  Player One /---------------------------------------------\ Player Two
-	// .=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.
-	// |   10000   /---------------------------------------------\   10000   |
-	// |                                                                     |
-
-	//             |=====| |=====| |=====| |=====| |=====| |=====|
-	//             |  1  | |  2  | |  3  | |  4  | |  5  | |  6  |
-	//             |=====| |=====| |=====| |=====| |=====| |=====|
-
-	// `)
-
-	// names can be 11 characters long. Names under 11 characters will be printed from left or right respectively. len(name) - 11 amount of whitespaces will be added on to the end (or beginning)
-	// of each name to build the first string
 
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, State.Players[0].Name, State.Players[1].Name))
@@ -120,7 +139,6 @@ func buildDice(dice []int) string {
 	leftPadding := ((boardWidth / 2) - (len(diceHeader) / 2))
 	// rightPadding := (boardWidth - (leftPadding - 4))
 
-<<<<<<< Updated upstream
 	fPosition := fmt.Sprintf("%*s|=====|", leftPadding, " ")
 
 	rPadding := (boardWidth - len(fPosition)) - 2 // -2 accounts for the two empty strings we add ??
@@ -134,102 +152,41 @@ func buildDice(dice []int) string {
 	return sb.String()
 }
 
-type tcpError struct {
-	err error
-}
-
-func (t tcpError) Error() string {
-	return t.err.Error()
-}
-
-type stateResponse struct{ res GameState }
-
-func connTCP() tea.Msg {
-	conn, err := net.Dial("tcp", "localhost:8080")
-	if err != nil {
-		return tcpError{err: err}
-	}
-	defer conn.Close()
-
-	buffer := make([]byte, 1024)
-
-	var gs GameState
-
-	for {
-		n, err := conn.Read(buffer)
-		if err != nil {
-			return tcpError{err: err}
-		}
-
-		if err := json.Unmarshal(buffer[:n], &gs); err != nil {
-			return nil
-		}
-		return stateResponse{res: gs}
-	}
-
-}
-
-func (m BoardModel) Init() tea.Cmd {
-	return connTCP
-
-	// all i/o (tcp connections etc) need to be returned by the init function
-	// all cmds are called by the tea runtime when needed.
-	// cmds run in routines andd sent to the update function for handling.
-
-	// ares are functions that dont take args and return a msg of type any
-	// if your commands need args you can include them in a closure
-
-	return nil
-}
-
-func (m BoardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// The update function wants to know how to deal with the commands we
-	// made and returned from init based on the message we expect back from the
-	// commands
-
-	// so we can do something like instead of having default players we could have
-	// "awaiting conn" and then the update changes the model (board string) and
-	// that will trigger the view to update on tcp connection
-
-	// also need to add in some kind of button to roll the dice
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "r":
-			m.game.Roll[0] = rand.Intn(6)
-			return m, nil
-		case "p":
-			// send message saying we've passed
-		}
-	}
-	return m, nil
-}
-
-func (m BoardModel) View() string {
-	return BuildBoard(m.game)
-}
-
 func main() {
 
-	m := InitialBoardModel()
-	p := tea.NewProgram(m)
-	if _, err := p.Run(); err != nil {
-		fmt.Print(err)
-		os.Exit(1)
-	}
+	client, _ := NewTCPClient()
 
-=======
+	// bm := InitialBoardModel()
+	// fmt.Println(bm.screen)
+
+	welcomeMessage := "waiting for game to start"
+
 	for {
-		data, err := io.ReadAll(fr)
-		if err != nil {
-			fmt.Println(err)
+		var gs GameState
+		response, _ := client.Read()
+		if string(response) == "" {
+			fmt.Printf("empty")
+			continue
+		}
+		if string(response) == welcomeMessage {
+			fmt.Print(string(response))
+		} else {
+
+			if err := json.Unmarshal(response, &gs); err != nil {
+				fmt.Printf("failed decoding %s", err)
+			}
+			fmt.Print(gs)
+
 		}
 
-		fmt.Println(string(data))
 	}
->>>>>>> Stashed changes
+
+}
+
+func NewLogger(filename string) *log.Logger {
+	logfile, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+	if err != nil {
+		panic("bad file")
+	}
+	return log.New(logfile, "[main]", log.Ldate|log.Ltime|log.Lshortfile)
 }
