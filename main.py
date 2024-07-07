@@ -52,7 +52,7 @@ def make_bot(name: str, extension: str) -> Callable[[bytes], bool]:
                 capture_output=True,
                 check=True,
             )
-            return bool(int(out.stdout))
+            return bool([c for c in str(out.stdout) if c.isdigit() and c != "0"])
 
         except subprocess.CalledProcessError as e:
             print(e.stderr.decode())
@@ -63,10 +63,10 @@ def make_bot(name: str, extension: str) -> Callable[[bytes], bool]:
 
 class App:
     def __init__(self):
+        self.pipe_client = PipeClient()
         input("press enter to start game:")
         print("game starting")
         self.bots = self.load_bots()
-        self.pipe_client = PipeClient()
         atexit.register(self.pipe_client.cleanup)
         self.game_state = GameState({name: 0 for name in self.bots}, 6, 0, [], "")
 
