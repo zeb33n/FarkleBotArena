@@ -20,7 +20,12 @@ TODO:
    during the loop of the game
 []
 
+<<<<<<< Updated upstream
 */
+=======
+func main() {
+	fifo := "../tmp/pipe"
+>>>>>>> Stashed changes
 
 type Player struct {
 	Name  string `json:bot_name`
@@ -115,6 +120,7 @@ func buildDice(dice []int) string {
 	leftPadding := ((boardWidth / 2) - (len(diceHeader) / 2))
 	// rightPadding := (boardWidth - (leftPadding - 4))
 
+<<<<<<< Updated upstream
 	fPosition := fmt.Sprintf("%*s|=====|", leftPadding, " ")
 
 	rPadding := (boardWidth - len(fPosition)) - 2 // -2 accounts for the two empty strings we add ??
@@ -216,4 +222,14 @@ func main() {
 		os.Exit(1)
 	}
 
+=======
+	for {
+		data, err := io.ReadAll(fr)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Println(string(data))
+	}
+>>>>>>> Stashed changes
 }
