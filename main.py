@@ -2,6 +2,7 @@ from collections.abc import Callable
 from pipe_client import PipeClient
 import random
 import time
+import atexit
 import os
 import subprocess
 import json
@@ -62,9 +63,11 @@ def make_bot(name: str, extension: str) -> Callable[[bytes], bool]:
 
 class App:
     def __init__(self):
-        input("press enter to start game\n")
+        input("press enter to start game:")
+        print("game starting")
         self.bots = self.load_bots()
         self.pipe_client = PipeClient()
+        atexit.register(self.pipe_client.cleanup)
         self.game_state = GameState({name: 0 for name in self.bots}, 6, 0, [], "")
 
     def load_bots(self) -> dict[str, Callable[[bytes], bool]]:
