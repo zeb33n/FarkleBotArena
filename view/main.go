@@ -1,23 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
-
-/*
-
-TODO:
-[] Change playercolour based on turn
-[] tcp client
-[] figure how we want the board to be represented to best allow access and change in the view
-   during the loop of the game
-[]
-*/
 
 type Player struct {
 	Name  string `json:"name"`
@@ -34,91 +27,105 @@ type GameState struct {
 	Turn       string   `json:"turn"`
 }
 
-type tcpClient struct {
-	conn net.Conn
+// im guesing well move tcp out of this at some point and leave this to handle ui
+type BoardModel struct {
+	log     *log.Logger
+	game    GameState
+	screen  string
+	tcp     net.Conn
+	tcpData chan []byte
+	tcpErr  chan error
 }
 
-func NewTCPClient() (*tcpClient, error) {
+type startReading struct{}
+
+type tcpResponse []byte
+
+type tcpReadError string
+
+func (m *BoardModel) readCmd() tea.Cmd {
+	return func() tea.Msg {
+		m.log.Print("reading")
+		buffer := make([]byte, 256)
+		n, err := m.tcp.Read(buffer)
+		if err != nil {
+			return tcpReadError(err.Error())
+		}
+
+		// var gs GameState
+
+		// if err := json.Unmarshal(buffer[:n], &gs); err != nil {
+		// 	return GameState{}, err
+		// }
+
+		cleanedBuff := []byte{}
+
+		for _, b := range buffer[:n] {
+			if !(b == 0) {
+				cleanedBuff = append(cleanedBuff, b)
+			} else {
+				break
+			}
+		}
+
+		m.log.Print((string(tcpResponse(cleanedBuff))))
+
+		return tcpResponse(cleanedBuff)
+
+	}
+}
+
+func InitialBoardModel(log *log.Logger) (BoardModel, error) {
 
 	conn, err := net.Dial("tcp", "localhost:8990")
 	if err != nil {
-		return &tcpClient{}, err
-	}
-	return &tcpClient{conn: conn}, nil
-
-}
-
-func (c tcpClient) Read() ([]byte, error) {
-	buffer := make([]byte, 256)
-	n, err := c.conn.Read(buffer)
-	if err != nil {
-		return []byte{}, err
+		return BoardModel{screen: "failed to connect"}, err
 	}
 
-	// var gs GameState
+	log.Printf("connected success %v", conn)
 
-	// if err := json.Unmarshal(buffer[:n], &gs); err != nil {
-	// 	return GameState{}, err
-	// }
-
-	cleanedBuff := []byte{}
-
-	for _, b := range buffer[:n] {
-		if !(b == 0) {
-			cleanedBuff = append(cleanedBuff, b)
-		} else {
-			break
-		}
-	}
-
-	return cleanedBuff, nil
-
-}
-
-type BoardModel struct {
-	game   GameState
-	screen string
-	// TcpModel tcpClient
-}
-
-func InitialBoardModel() BoardModel {
-	// This currently populates with a default valued screen whilst we
-	// await a connection from the client
 	defaultGameState := GameState{
 		Players: []Player{
-			{Name: "something", Score: 0},
-			{Name: "22", Score: 0},
+			{Name: "player 1", Score: 0},
+			{Name: "player 2", Score: 0},
 			{Name: "player 3", Score: 0},
 			{Name: "player 4", Score: 0},
 		},
-		Numdice:    4,
+		Numdice:    6,
 		RoundScore: 00000,
 		Roll:       []int{1, 2, 3, 4, 5, 6},
 		Turn:       "waiting for connections",
 	}
 
 	return BoardModel{
-		game:   defaultGameState,
-		screen: BuildBoard(defaultGameState),
-	}
+		game:    defaultGameState,
+		screen:  BuildBoard(defaultGameState),
+		tcp:     conn,
+		log:     log,
+		tcpData: make(chan []byte),
+		tcpErr:  make(chan error),
+	}, nil
 
 }
 
 func BuildBoard(State GameState) string {
 
+	Players := make([]Player, len(State.Players))
+	copy(Players, State.Players)
+
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, State.Players[0].Name, State.Players[1].Name))
+	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[0].Name, Players[1].Name))
 	sb.WriteString("\n")
 	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.` + "\n")
-	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, State.Players[0].Score, State.Players[1].Score))
+	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, Players[0].Score, Players[1].Score))
 	sb.WriteString("\n")
 	sb.WriteString(buildDice(State.Roll))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf(`|%11d\---------------------------------------------/%-11d|`, State.Players[2].Score, State.Players[2].Score))
+	sb.WriteString(fmt.Sprintf(`|%11d\---------------------------------------------/%-11d|`, Players[2].Score, Players[2].Score))
 	sb.WriteString("\n")
 	// being lazy, needs padding, maybe need a padding func
 	sb.WriteString(`.=-=-=-=-=-=\              Press R or P               /=-=-=-=-=-=.` + "\n")
-	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, State.Players[2].Name, State.Players[2].Name))
+	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[2].Name, Players[2].Name))
 
 	return sb.String()
 
@@ -154,32 +161,20 @@ func buildDice(dice []int) string {
 
 func main() {
 
-	client, _ := NewTCPClient()
+	log := NewLogger("log.txt")
 
-	// bm := InitialBoardModel()
-	// fmt.Println(bm.screen)
+	log.Println("new log")
 
-	welcomeMessage := "waiting for game to start"
+	// includes placeholder values and initialised tcp connection on the mode
+	m, err := InitialBoardModel(log)
+	log.Printf("new model %v", m)
+	if err != nil {
+		log.Printf("tcp failed %s", err)
+	}
 
-	for {
-		var gs GameState
-		response, _ := client.Read()
-		if string(response) == "" {
-			fmt.Printf("empty")
-			continue
-		}
-		if string(response) == welcomeMessage {
-			fmt.Printf("%s\n", (string(response)))
-		} else {
-
-			if err := json.Unmarshal(response, &gs); err != nil {
-				fmt.Printf("failed decoding %s", err)
-			}
-
-			fmt.Print(BuildBoard(gs))
-
-		}
-
+	p := tea.NewProgram(m)
+	if _, err := p.Run(); err != nil {
+		log.Printf("something bad happened %s", err)
 	}
 
 }
@@ -190,4 +185,35 @@ func NewLogger(filename string) *log.Logger {
 		panic("bad file")
 	}
 	return log.New(logfile, "[main]", log.Ldate|log.Ltime|log.Lshortfile)
+}
+
+func (m BoardModel) Init() tea.Cmd {
+	return m.readCmd()
+}
+func (m BoardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "ctrl+c", "esc":
+			return m, tea.Quit
+		}
+
+	case startReading:
+		return m, m.readCmd()
+
+	case tcpResponse:
+		var gs GameState
+		r := bytes.NewReader(msg)
+		if err := json.NewDecoder(r).Decode(&gs); err != nil {
+			m.log.Printf("decoding failed %s", err)
+		}
+		m.screen = BuildBoard(gs)
+		return m, m.readCmd()
+
+	}
+	return m, nil
+}
+
+func (m BoardModel) View() string {
+	return m.screen
 }
