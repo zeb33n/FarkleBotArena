@@ -84,12 +84,6 @@ struct Player register_players(int socketfd) {
   }
   printf("connection recieved\n");
   register_player('0');
-  char msg[] = "waiting for game to start";
-  long send_err = send(clientfd, msg, sizeof(msg), 0);
-  if (send_err == -1) {
-    perror("Send Error");
-    exit(-1);
-  }
   struct Player player = {'0', clientfd};
   return player;
 }
