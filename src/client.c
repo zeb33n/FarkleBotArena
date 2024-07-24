@@ -4,13 +4,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-char *read_user() {
+char* read_user() {
   static char out[1] = {0};
   read(0, out, 1);
   return out;
 }
 
-char *read_server(int socketfd) {
+char* read_server(int socketfd) {
   static char recv_buf[256] = {0};
   if (recv(socketfd, recv_buf, 255, 0) == 0) {
     // add error handling
@@ -19,9 +19,8 @@ char *read_server(int socketfd) {
 }
 
 int main() {
-  int socketfd = socket(AF_INET, SOCK_STREAM,
-                        0); // what does AF_INET // what does 0 mean here
-  struct sockaddr address = {AF_INET, htons(8998), 0};
+  int socketfd = socket(AF_INET, SOCK_STREAM, 0);
+  struct sockaddr_in address = {AF_INET, htons(8990), INADDR_ANY};
 
   int con_err = connect(socketfd, &address, sizeof(address));
   if (con_err == -1) {
@@ -29,12 +28,12 @@ int main() {
   }
 
   struct pollfd fds[2] = {{0, POLLIN, 0},
-                          {socketfd, POLLIN, 0}}; // what does POLLIN mean
+                          {socketfd, POLLIN, 0}};  // what does POLLIN mean
 
   for (;;) {
     poll(fds, 2, 50000);
     if (fds[0].revents & POLLIN) {
-      char *msg = read_user();
+      char* msg = read_user();
       printf("%s\n", msg);
       send(socketfd, msg, 1, 0);
       if (*msg == 'q') {
@@ -42,7 +41,7 @@ int main() {
       }
 
     } else if (fds[1].revents & POLLIN) {
-      char *game_state = read_server(socketfd);
+      char* game_state = read_server(socketfd);
       printf("%s\n", game_state);
     }
   }
