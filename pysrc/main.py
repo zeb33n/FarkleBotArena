@@ -16,7 +16,7 @@ from farkle_scorer import calculate_score
 # make output pretty
 
 LINES = 3
-BOT_DIR_LOC = f'{__file__.rsplit("/", 1)[0]}/bots'
+BOT_DIR_LOC = f'{__file__.rsplit("/", 1)[0]}/../bots'
 
 
 @dataclass

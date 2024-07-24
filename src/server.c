@@ -46,7 +46,7 @@ int recv_client_input(int clientfd) {
   return 0;
 }
 
-void cp_file(char *source, char *target) {
+void cp_file(char* source, char* target) {
   int srcfd = open(source, O_RDONLY);
   int tgtfd = open(target, O_CREAT | O_WRONLY, 0777);
   char buffer[4096];
@@ -73,7 +73,7 @@ void cp_file(char *source, char *target) {
 void register_player(char num) {
   char target[] = "../bots/player0.py";
   target[14] = num;
-  cp_file("../player.py", target);
+  cp_file("../pysrc/player.py", target);
 }
 
 // TODO! use fork for multiple connections!
@@ -96,7 +96,7 @@ struct Player register_players(int socketfd) {
 
 int main() {
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-  struct sockaddr_in address = {AF_INET, htons(8990), INADDR_ANY};
+  struct sockaddr_in address = {AF_INET, htons(8992), INADDR_ANY};
 
   int bind_err = bind(socketfd, &address, sizeof(address));
   if (bind_err == -1) {
