@@ -1,3 +1,6 @@
 *.exe
 bots/*.exe
 __pycache__
+.eggs/ 
+farkle.egg-info/
+target/ 
