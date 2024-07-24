@@ -88,6 +88,24 @@ struct Player register_players(int socketfd) {
   return player;
 }
 
+int await_game_start(struct Player player) {
+  int sendfd = open("start", O_WRONLY);
+  char* out = "1";
+  struct pollfd fd[] = {{player.clientfd, POLLIN, 0}};
+  while (1) {
+    poll(fd, 1, 50000);
+    if (fd[0].revents & POLLIN) {
+      int err = write(sendfd, out, 1);
+      close(sendfd);
+      if (err == -1) {
+        perror("writeerror");
+        return -1;
+      }
+      return 0;
+    }
+  }
+}
+
 // pipe into file with player tag
 
 // players join into lobby
@@ -96,7 +114,7 @@ struct Player register_players(int socketfd) {
 
 int main() {
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-  struct sockaddr_in address = {AF_INET, htons(8992), INADDR_ANY};
+  struct sockaddr_in address = {AF_INET, htons(4123), INADDR_ANY};
 
   int bind_err = bind(socketfd, &address, sizeof(address));
   if (bind_err == -1) {
@@ -111,7 +129,13 @@ int main() {
   }
 
   struct Player player = register_players(socketfd);
-  int pipefd = open("../pipe", O_RDONLY);
+  char* welcome = "hello!";
+  send(player.clientfd, welcome, sizeof(welcome), 0);
+
+  await_game_start(player);
+  printf("starting");
+
+  int pipefd = open("pipe", O_RDONLY);
 
   struct pollfd fds[2] = {{pipefd, POLLIN, 0}, {player.clientfd, POLLIN, 0}};
   for (;;) {

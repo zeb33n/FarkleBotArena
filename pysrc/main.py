@@ -34,7 +34,7 @@ class GameState:
 
     def to_tui(self) -> str:
         dic = asdict(self)
-        dic["bots"] = [{"name": k, "score": v} for k,v in dic["bots"].items()]
+        dic["bots"] = [{"name": k, "score": v} for k, v in dic["bots"].items()]
         return json.dumps(dic)
 
 
@@ -63,10 +63,17 @@ def make_bot(name: str, extension: str) -> Callable[[bytes], bool]:
     return bot
 
 
+def await_game_start():
+    pipe_client = PipeClient("start")
+    pipe_client.await_pipe()
+    pipe_client.cleanup()
+
+
 class App:
     def __init__(self):
         self.pipe_client = PipeClient()
-        input("press enter to start game:")
+        print("waiting to start game:")
+        await_game_start()
         print("game starting")
         self.bots = self.load_bots()
         atexit.register(self.pipe_client.cleanup)

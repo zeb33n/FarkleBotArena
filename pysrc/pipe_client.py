@@ -11,5 +11,12 @@ class PipeClient:
         with open(self._pipename, "w") as p:
             p.write(msg)
 
+    def await_pipe(self):
+        with open(self._pipename) as p:
+            while True:
+                data = p.read()
+                if data:
+                    break
+
     def cleanup(self):
         os.remove(self._pipename)
