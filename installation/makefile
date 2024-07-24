@@ -1,18 +1,29 @@
 CC=gcc 
-SRC_DIR = ../bot_src
-OBJ_DIR = ../bots
+BOT_SRC = ../bot_src
+BOT_DIR = ../bots
+SRC = ../src
+TARGET = ../target
+
+_CSRCS = server client
+CSRCS = $(patsubst %,$(SRC)/%,$(_CSRCS))
 
 # Add you C bot name here 
-_CSRCS = cbot under_500
+_BSRCS = cbot under_500
+BSRCS = $(patsubst %,$(BOT_SRC)/%,$(_BSRCS))
 
-CSRCS = $(patsubst %,$(SRC_DIR)/%,$(_CSRCS))
+all: sc bots
 
-all: $(CSRCS)
+sc: $(CSRCS)
 
 $(CSRCS): %: %.c
-	$(CC) -o $(subst $(SRC_DIR),$(OBJ_DIR),$@.exe) $< -lcjson	
+	$(CC) -o $(subst $(SRC),$(TARGET),$@) $< -Wno-incompatible-pointer-types
+
+bots: $(BSRCS)
+
+$(BSRCS): %: %.c
+	$(CC) -o $(subst $(BOT_SRC),$(BOT_DIR),$@.exe) $< -lcjson	
 
 .PHONY: clean 
 
 clean: 
-	rm -f $(OBJ_DIR)/*.exe 
+	rm -f $(BOT_DIR)/*.exe 
