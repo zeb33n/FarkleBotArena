@@ -30,7 +30,7 @@ int send_game_state(int pipefd, int clientfd) {
   // }
   // game_state[bytes_read] = '\0';
 
-  long send_err = send(clientfd, game_state, 255, 0);
+  long send_err = send(clientfd, game_state, 255, 0);  // we need more bytes
   printf("%s\n", game_state);
   if (send_err == -1) {
     perror("Send Error");
