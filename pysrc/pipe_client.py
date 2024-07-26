@@ -9,6 +9,7 @@ class PipeClient:
 
     def pipe(self, msg: str):
         with open(self._pipename, "w") as p:
+            print("wow")
             p.write(f"{msg};")
 
     def await_pipe(self):

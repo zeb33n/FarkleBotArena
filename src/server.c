@@ -11,30 +11,17 @@ struct Player {
   int clientfd;
 };
 
-static char* read_line(int pipefd) {
-  unsigned char c[] = {0};
-  char* out = malloc(1024 * sizeof(char));
-  int length = 1024;
+int send_game_state(int pipefd, int clientfd) {
+  char game_state[1024] = {0};
+
+  char c = 0;
   int i = 0;
-  while (c[0] != ';') {
-    if (c[0] == ';') {
-      printf("hell yeah\n");
-    }
-    int bytes_read = read(pipefd, c, 1);
-    if (bytes_read < 0) {
-      perror("ReadError");
-      exit(-1);
-    }
-    out[i] = *c;
+  while ((c != ';') & (read(pipefd, &c, 1) > 0)) {
+    game_state[i] = c;
     i++;
   }
-  printf("%i\n", i);
-  out[i] = '\0';
-  return out;
-}
-
-int send_game_state(int pipefd, int clientfd) {
-  char* game_state = read_line(pipefd);
+  // printf("%i:i\n", i);
+  game_state[i - 1] = '\0';
 
   // int bytes_read = read(pipefd, game_state, 255);
   // if (bytes_read < 0) {
@@ -45,7 +32,6 @@ int send_game_state(int pipefd, int clientfd) {
 
   long send_err = send(clientfd, game_state, 255, 0);
   printf("%s\n", game_state);
-  free(game_state);
   if (send_err == -1) {
     perror("Send Error");
     return -1;
