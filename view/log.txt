@@ -1,11 +1,23 @@
-[main]2024/07/10 07:31:52 main.go:221: new log
-[main]2024/07/10 07:31:52 main.go:121: connected success &{{0xc0000ba200}}
-[main]2024/07/10 07:31:52 main.go:225: new model {0xc0000a0720 {[{player 1 0} {player 2 0} {player 3 0} {player 4 0}] 6 0 [1 2 3 4 5 6] waiting for connections}     player 1/---------------------------------------------\player 2    
+[main]2024/07/26 18:30:07 main.go:241: new log
+[main]2024/07/26 18:30:07 main.go:137: connected success &{{0xc00011a200}}
+[main]2024/07/26 18:30:07 main.go:248: {0xc00010a720 {[{player 1 0} {player 2 0} {player 3 0} {player 4 0}] 6 0 [1 2 3 4 5 6] waiting for connections}     player 1/---------------------------------------------\player 2    
 .=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.
 |          0/---------------------------------------------\0          |
 |              |=====||=====||=====||=====||=====||=====|                                                |
 |              |  1  ||  2  ||  3  ||  4  ||  5  ||  6  |                                                |
 |              |=====||=====||=====||=====||=====||=====|                                                |
 |          0          0|
-.=-=-=-=-=-=\              Press R or P               /=-=-=-=-=-=.
-    player 3/---------------------------------------------\player 4     0xc00009e090 0xc00008e180 0xc00008e1e0}
+.=-=-=-=-=-=\              Press 1 To Start Game               /=-=-=-=-=-=.
+    player 3/---------------------------------------------\player 4     0xc00004c098 0xc00007e180 0xc00007e1e0}
+[main]2024/07/26 18:30:07 main.go:249: new model {0xc00010a720 {[{player 1 0} {player 2 0} {player 3 0} {player 4 0}] 6 0 [1 2 3 4 5 6] waiting for connections}     player 1/---------------------------------------------\player 2    
+.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.
+|          0/---------------------------------------------\0          |
+|              |=====||=====||=====||=====||=====||=====|                                                |
+|              |  1  ||  2  ||  3  ||  4  ||  5  ||  6  |                                                |
+|              |=====||=====||=====||=====||=====||=====|                                                |
+|          0          0|
+.=-=-=-=-=-=\              Press 1 To Start Game               /=-=-=-=-=-=.
+    player 3/---------------------------------------------\player 4     0xc00004c098 0xc00007e180 0xc00007e1e0}
+[main]2024/07/26 18:30:10 main.go:67: {"bots": [{"name": "scared", "score": 0}, {"name": "bot", "score": 0}, {"name": "player0", "score": 0}], "num_dice": 4, "round_score": 150, "roll": [5, 1, 4, 6, 6, 2], "turn": "scared"}{"bots": [{"name": "scared", "score": 0}, {"name": "bot", "score": 0},
+[main]2024/07/26 18:30:10 main.go:67:  {"name": "player0", "score": 0}], "num_dice": 2, "round_score": 350, "roll": [1, 6, 4, 1], "turn": "scared"}{"bots": [{"name": "scared", "score": 350}, {"name": "bot", "score": 0}, {"name": "player0", "score": 0}], "num_dice": 2, "round_score": 0, "roll":
+[main]2024/07/26 18:30:10 main.go:67:  [2, 2], "turn": "bot"}

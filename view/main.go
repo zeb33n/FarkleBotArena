@@ -43,6 +43,8 @@ type tcpResponse []byte
 
 type tcpReadError string
 
+type userinput string
+
 // reads from the tcp connection inside a go routine and sends the data it recieves to channels on the model struct
 func (m *BoardModel) startReading() {
 	go func() {
@@ -62,10 +64,24 @@ func (m *BoardModel) startReading() {
 					break
 				}
 			}
+			m.log.Print(string(cleanedBuff))
 			m.tcpDataChan <- cleanedBuff
 
 		}
 	}()
+
+}
+
+func (m *BoardModel) sendResponse() tea.Cmd {
+	return func() tea.Msg {
+
+		_, err := m.tcp.Write([]byte("1"))
+		if err != nil {
+			m.log.Print(err)
+		}
+
+		return userinput("")
+	}
 
 }
 
@@ -113,7 +129,7 @@ func (m *BoardModel) readCmd() tea.Cmd {
 // default model to be displayed by bt
 func InitialBoardModel(log *log.Logger) (BoardModel, error) {
 
-	conn, err := net.Dial("tcp", "localhost:8990")
+	conn, err := net.Dial("tcp", "localhost:4123")
 	if err != nil {
 		return BoardModel{screen: "failed to connect"}, err
 	}
@@ -145,7 +161,10 @@ func InitialBoardModel(log *log.Logger) (BoardModel, error) {
 }
 
 func BuildBoard(State GameState) string {
-
+	PlayerMessage := "R OR P"
+	if State.Turn == "waiting for connections" {
+		PlayerMessage = "Press 1 To Start Game"
+	}
 	// we dont need to this anymore and are just creating copies for joke every time to board is made :D
 	Players := make([]Player, len(State.Players))
 	copy(Players, State.Players)
@@ -154,7 +173,8 @@ func BuildBoard(State GameState) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[0].Name, Players[1].Name))
 	sb.WriteString("\n")
-	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.` + "\n")
+	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.`)
+	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, Players[0].Score, Players[1].Score))
 	sb.WriteString("\n")
 	sb.WriteString(buildDice(State.Roll))
@@ -171,14 +191,14 @@ func BuildBoard(State GameState) string {
 		sb.WriteString(fmt.Sprintf(`|%11d`, Players[2].Score))
 		sb.WriteString(fmt.Sprintf(`%11d|`, 0))
 		sb.WriteString("\n")
-		sb.WriteString(`.=-=-=-=-=-=\              Press R or P               /=-=-=-=-=-=.` + "\n")
+		sb.WriteString(fmt.Sprintf(`.=-=-=-=-=-=\              %s               /=-=-=-=-=-=.`, PlayerMessage) + "\n")
 		sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[2].Name, "No Player"))
 
 	case 4:
 		sb.WriteString(fmt.Sprintf(`|%11d`, Players[2].Score))
 		sb.WriteString(fmt.Sprintf(`%11d|`, Players[3].Score))
 		sb.WriteString("\n")
-		sb.WriteString(`.=-=-=-=-=-=\              Press R or P               /=-=-=-=-=-=.` + "\n")
+		sb.WriteString(fmt.Sprintf(`.=-=-=-=-=-=\              %s               /=-=-=-=-=-=.`, PlayerMessage) + "\n")
 		sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[2].Name, Players[3].Name))
 	}
 
@@ -222,10 +242,15 @@ func main() {
 
 	// includes placeholder values and initialised tcp connection on the mode
 	m, err := InitialBoardModel(log)
-	log.Printf("new model %v", m)
 	if err != nil {
-		log.Printf("tcp failed %s", err)
+		log.Print(err)
 	}
+	log.Print(m)
+	log.Printf("new model %v", m)
+
+	// if err != nil {
+	// 	log.Printf("tcp failed %s", err)
+	// }
 
 	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
@@ -255,6 +280,9 @@ func (m BoardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "ctrl+c", "esc":
 			return m, tea.Quit
+		case "1":
+			return m, m.sendResponse()
+
 		}
 
 	// case startReading:
@@ -274,5 +302,6 @@ func (m BoardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m BoardModel) View() string {
+	// m.log.Print(m.screen)
 	return m.screen
 }

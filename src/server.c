@@ -129,8 +129,6 @@ int main() {
   }
 
   struct Player player = register_players(socketfd);
-  char* welcome = "hello!";
-  send(player.clientfd, welcome, sizeof(welcome), 0);
 
   await_game_start(player);
   printf("starting");
