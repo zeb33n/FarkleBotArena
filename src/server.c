@@ -11,16 +11,41 @@ struct Player {
   int clientfd;
 };
 
-int send_game_state(int pipefd, int clientfd) {
-  char game_state[256] = {0};
-  int bytes_read = read(pipefd, game_state, 255);
-  if (bytes_read < 0) {
-    perror("read");
-    return -1;
+static char* read_line(int pipefd) {
+  unsigned char c[] = {0};
+  char* out = malloc(1024 * sizeof(char));
+  int length = 1024;
+  int i = 0;
+  while (c[0] != ';') {
+    if (c[0] == ';') {
+      printf("hell yeah\n");
+    }
+    int bytes_read = read(pipefd, c, 1);
+    if (bytes_read < 0) {
+      perror("ReadError");
+      exit(-1);
+    }
+    out[i] = *c;
+    i++;
   }
-  game_state[bytes_read] = '\0';
+  printf("%i\n", i);
+  out[i] = '\0';
+  return out;
+}
+
+int send_game_state(int pipefd, int clientfd) {
+  char* game_state = read_line(pipefd);
+
+  // int bytes_read = read(pipefd, game_state, 255);
+  // if (bytes_read < 0) {
+  //   perror("read");
+  //   return -1;
+  // }
+  // game_state[bytes_read] = '\0';
 
   long send_err = send(clientfd, game_state, 255, 0);
+  printf("%s\n", game_state);
+  free(game_state);
   if (send_err == -1) {
     perror("Send Error");
     return -1;
@@ -41,7 +66,7 @@ int recv_client_input(int clientfd) {
   }
   int playerfd = open("../player0", O_WRONLY);
   write(playerfd, buffer, 1);
-  printf("%s", buffer);
+  printf("%s\n", buffer);
   close(playerfd);
   return 0;
 }
@@ -131,7 +156,7 @@ int main() {
   struct Player player = register_players(socketfd);
 
   await_game_start(player);
-  printf("starting");
+  printf("starting\n");
 
   int pipefd = open("pipe", O_RDONLY);
 
@@ -152,6 +177,7 @@ int main() {
     }
   }
 
+  close(pipefd);
   close(player.clientfd);
   close(socketfd);
 
