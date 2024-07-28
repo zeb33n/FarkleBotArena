@@ -11,8 +11,8 @@ char* read_user() {
 }
 
 char* read_server(int socketfd) {
-  static char recv_buf[256] = {0};
-  if (recv(socketfd, recv_buf, 255, 0) == 0) {
+  static char recv_buf[1024] = {0};
+  if (recv(socketfd, recv_buf, 1023, 0) == 0) {
     // add error handling
   }
   return recv_buf;

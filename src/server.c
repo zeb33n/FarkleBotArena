@@ -20,18 +20,9 @@ int send_game_state(int pipefd, int clientfd) {
     game_state[i] = c;
     i++;
   }
-  // printf("%i:i\n", i);
   game_state[i - 1] = '\0';
 
-  // int bytes_read = read(pipefd, game_state, 255);
-  // if (bytes_read < 0) {
-  //   perror("read");
-  //   return -1;
-  // }
-  // game_state[bytes_read] = '\0';
-
-  long send_err = send(clientfd, game_state, 255, 0);  // we need more bytes
-  printf("%s\n", game_state);
+  long send_err = send(clientfd, game_state, 1023, 0);  // we need more bytes
   if (send_err == -1) {
     perror("Send Error");
     return -1;
