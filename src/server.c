@@ -16,13 +16,14 @@ int send_game_state(int pipefd, int clientfd) {
 
   char c = 0;
   int i = 0;
-  while ((c != ';') & (read(pipefd, &c, 1) > 0)) {
+  while (c != ';' && read(pipefd, &c, 1) > 0) {
     game_state[i] = c;
     i++;
   }
   game_state[i - 1] = '\0';
+  printf("%s\n", game_state);
 
-  long send_err = send(clientfd, game_state, 1023, 0);  // we need more bytes
+  long send_err = send(clientfd, game_state, 1023, 0);
   if (send_err == -1) {
     perror("Send Error");
     return -1;

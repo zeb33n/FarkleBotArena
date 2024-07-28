@@ -1,6 +1,6 @@
-[main]2024/07/26 18:30:07 main.go:241: new log
-[main]2024/07/26 18:30:07 main.go:137: connected success &{{0xc00011a200}}
-[main]2024/07/26 18:30:07 main.go:248: {0xc00010a720 {[{player 1 0} {player 2 0} {player 3 0} {player 4 0}] 6 0 [1 2 3 4 5 6] waiting for connections}     player 1/---------------------------------------------\player 2    
+[main]2024/07/28 15:55:09 main.go:241: new log
+[main]2024/07/28 15:55:09 main.go:137: connected success &{{0xc0000c6200}}
+[main]2024/07/28 15:55:09 main.go:248: {0xc0000aa870 {[{player 1 0} {player 2 0} {player 3 0} {player 4 0}] 6 0 [1 2 3 4 5 6] waiting for connections}     player 1/---------------------------------------------\player 2    
 .=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.
 |          0/---------------------------------------------\0          |
 |              |=====||=====||=====||=====||=====||=====|                                                |
@@ -8,8 +8,8 @@
 |              |=====||=====||=====||=====||=====||=====|                                                |
 |          0          0|
 .=-=-=-=-=-=\              Press 1 To Start Game               /=-=-=-=-=-=.
-    player 3/---------------------------------------------\player 4     0xc00004c098 0xc00007e180 0xc00007e1e0}
-[main]2024/07/26 18:30:07 main.go:249: new model {0xc00010a720 {[{player 1 0} {player 2 0} {player 3 0} {player 4 0}] 6 0 [1 2 3 4 5 6] waiting for connections}     player 1/---------------------------------------------\player 2    
+    player 3/---------------------------------------------\player 4     0xc0000a60b8 0xc000096180 0xc0000961e0}
+[main]2024/07/28 15:55:09 main.go:249: new model {0xc0000aa870 {[{player 1 0} {player 2 0} {player 3 0} {player 4 0}] 6 0 [1 2 3 4 5 6] waiting for connections}     player 1/---------------------------------------------\player 2    
 .=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.
 |          0/---------------------------------------------\0          |
 |              |=====||=====||=====||=====||=====||=====|                                                |
@@ -17,7 +17,16 @@
 |              |=====||=====||=====||=====||=====||=====|                                                |
 |          0          0|
 .=-=-=-=-=-=\              Press 1 To Start Game               /=-=-=-=-=-=.
-    player 3/---------------------------------------------\player 4     0xc00004c098 0xc00007e180 0xc00007e1e0}
-[main]2024/07/26 18:30:10 main.go:67: {"bots": [{"name": "scared", "score": 0}, {"name": "bot", "score": 0}, {"name": "player0", "score": 0}], "num_dice": 4, "round_score": 150, "roll": [5, 1, 4, 6, 6, 2], "turn": "scared"}{"bots": [{"name": "scared", "score": 0}, {"name": "bot", "score": 0},
-[main]2024/07/26 18:30:10 main.go:67:  {"name": "player0", "score": 0}], "num_dice": 2, "round_score": 350, "roll": [1, 6, 4, 1], "turn": "scared"}{"bots": [{"name": "scared", "score": 350}, {"name": "bot", "score": 0}, {"name": "player0", "score": 0}], "num_dice": 2, "round_score": 0, "roll":
-[main]2024/07/26 18:30:10 main.go:67:  [2, 2], "turn": "bot"}
+    player 3/---------------------------------------------\player 4     0xc0000a60b8 0xc000096180 0xc0000961e0}
+[main]2024/07/28 15:55:12 main.go:67: {"bots": [{"name": "bot", "score": 0}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 4, "round_score": 100, "roll": [6, 3, 5, 2, 4, 5], "turn": "bot"}
+[main]2024/07/28 15:55:13 main.go:67: {"bots": [{"name": "bot", "score": 0}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 1, "round_score": 600, "roll": [4, 5, 5, 5], "turn": "bot"}
+[main]2024/07/28 15:55:16 main.go:67: {"bots": [{"name": "bot", "score": 600}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 1, "round_score": 0, "roll": [3], "turn": "player0"}
+[main]2024/07/28 15:55:16 main.go:67: {"bots": [{"name": "bot", "score": 600}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 1, "round_score": 450, "roll": [4, 3, 3, 5, 3, 1], "turn": "under_500"}
+[main]2024/07/28 15:55:17 main.go:67: {"bots": [{"name": "bot", "score": 600}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 1, "round_score": 450, "roll": [2], "turn": "under_500"}
+[main]2024/07/28 15:55:17 main.go:67: {"bots": [{"name": "bot", "score": 600}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 1, "round_score": 700, "roll": [5, 5, 5, 1, 4, 1], "turn": "bot"}
+[main]2024/07/28 15:55:18 main.go:67: {"bots": [{"name": "bot", "score": 1300}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 1, "round_score": 0, "roll": [2], "turn": "cbot"}
+[main]2024/07/28 15:55:27 main.go:67: {"bots": [{"name": "bot", "score": 1300}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 3, "round_score": 200, "roll": [1, 5, 5, 4, 2, 2], "turn": "player0"}
+[main]2024/07/28 15:55:35 main.go:67: {"bots": [{"name": "bot", "score": 1300}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 2, "round_score": 300, "roll": [3, 6, 1], "turn": "player0"}
+[main]2024/07/28 15:55:38 main.go:67: {"bots": [{"name": "bot", "score": 1300}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 1, "round_score": 400, "roll": [2, 1], "turn": "player0"}
+[main]2024/07/28 15:55:42 main.go:67: {"bots": [{"name": "bot", "score": 1300}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 0, "round_score": 500, "roll": [1], "turn": "player0"}
+[main]2024/07/28 15:55:43 main.go:67: {"bots": [{"name": "bot", "score": 1300}, {"name": "cbot", "score": 0}, {"name": "player0", "score": 0}, {"name": "under_500", "score": 0}], "num_dice": 3, "round_score": 700, "roll": [5, 5, 4, 4, 1, 6], "turn": "player0"}

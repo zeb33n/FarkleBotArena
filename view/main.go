@@ -48,7 +48,7 @@ type userinput string
 // reads from the tcp connection inside a go routine and sends the data it recieves to channels on the model struct
 func (m *BoardModel) startReading() {
 	go func() {
-		buffer := make([]byte, 256)
+		buffer := make([]byte, 1024)
 		for {
 			n, err := m.tcp.Read(buffer)
 			if err != nil {
