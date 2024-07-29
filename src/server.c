@@ -1,15 +1,19 @@
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <pthread.h>  //maybe use threads instead
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 struct Player {
   char num;
   int clientfd;
 };
+
+int NUMCONN;
 
 int send_game_state(int pipefd, int clientfd) {
   char game_state[1024] = {0};
@@ -21,7 +25,6 @@ int send_game_state(int pipefd, int clientfd) {
     i++;
   }
   game_state[i - 1] = '\0';
-  printf("%s\n", game_state);
 
   long send_err = send(clientfd, game_state, 1023, 0);
   if (send_err == -1) {
@@ -73,21 +76,34 @@ void cp_file(char* source, char* target) {
   close(tgtfd);
 }
 
-void register_player(char num) {
-  char target[] = "../bots/player0.py";
-  target[14] = num;
+struct Player register_player(int clientfd) {
+  int id = getpid();
+  char target[48] = {'\0'};
+
+  sprintf(target, "../bots/player%i.py", id);
   cp_file("../pysrc/player.py", target);
+  struct Player player = {id, clientfd};
+  return player;
 }
 
 // TODO! use fork for multiple connections!
 struct Player register_players(int socketfd) {
-  int clientfd = accept(socketfd, 0, 0);
-  if (clientfd == -1) {
-    perror("accept error");
+  int clientfd;
+  for (;;) {
+    clientfd = accept(socketfd, 0, 0);
+    if (clientfd == -1) {
+      perror("accept error");
+      continue;
+    }
+    int pid = fork();
+    NUMCONN++;
+    if (pid != 0) {
+      break;
+    }
   }
   printf("connection recieved\n");
-  register_player('0');
-  struct Player player = {'0', clientfd};
+  struct Player player = register_player(clientfd);
+  printf("connection recieved\n");
   return player;
 }
 
@@ -133,8 +149,11 @@ int main() {
 
   struct Player player = register_players(socketfd);
 
+  printf("%i", NUMCONN);
+
+  printf("playerid: %i registered\n", player.num);
+
   await_game_start(player);
-  printf("starting\n");
 
   int pipefd = open("pipe", O_RDONLY);
 

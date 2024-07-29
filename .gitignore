@@ -1,5 +1,6 @@
 *.exe
 bots/*.exe
+bots/player*
 __pycache__
 .eggs/ 
 farkle.egg-info/
