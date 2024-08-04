@@ -71,12 +71,12 @@ def await_game_start():
 
 class App:
     def __init__(self):
-        self.pipe_client = PipeClient()
         print("waiting to start game:")
         await_game_start()
         print("game starting")
         self.bots = self.load_bots()
-        atexit.register(self.pipe_client.cleanup)
+        self.pipes = [PipeClient(f"../pipes/r{key}") for key in self.bots.keys()]
+        [atexit.register(p.cleanup) for p in self.pipes]
         self.game_state = GameState({name: 0 for name in self.bots}, 6, 0, [], "")
 
     def load_bots(self) -> dict[str, Callable[[bytes], bool]]:
@@ -97,7 +97,10 @@ class App:
                         self.game_state.roll
                     )
                     self.game_state.round_score += score
-                    self.pipe_client.pipe(self.game_state.to_tui())
+                    print(score)
+                    for p in self.pipes:
+                        p.pipe(self.game_state.to_tui())
+                    print("banana")
                     if score == 0:
                         self.game_state.num_dice = 6
                         break
@@ -106,7 +109,6 @@ class App:
                     time.sleep(1)
                 else:
                     self.game_state.bots[bot_name] += self.game_state.round_score
-        self.pipe_client.cleanup()
 
 
 if __name__ == "__main__":
