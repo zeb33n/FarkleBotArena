@@ -3,11 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"os"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -160,79 +158,86 @@ func InitialBoardModel(log *log.Logger) (BoardModel, error) {
 
 }
 
-func BuildBoard(State GameState) string {
-	PlayerMessage := "R OR P"
-	if State.Turn == "waiting for connections" {
-		PlayerMessage = "Press 1 To Start Game"
-	}
-	// we dont need to this anymore and are just creating copies for joke every time to board is made :D
-	Players := make([]Player, len(State.Players))
-	copy(Players, State.Players)
+// func BuildBoard(State GameState) string {
 
-	// hardcoded minimum of two players atm
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[0].Name, Players[1].Name))
-	sb.WriteString("\n")
-	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.`)
-	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, Players[0].Score, Players[1].Score))
-	sb.WriteString("\n")
-	sb.WriteString(buildDice(State.Roll))
-	sb.WriteString("\n")
+// 	width, height, err := term.GetSize(0)
+// 	if err != nil {
+// 		return " "
+// 	}
 
-	// im br0ke
-	// I think I just need to re think how this board is being made entirely cause it sucks rn and its v rigid
-	// and the spacings are awkward, dice padding isnt working and its kind of a mess
+// 	PlayerMessage := "R OR P"
+// 	if State.Turn == "waiting for connections" {
+// 		PlayerMessage = "Press 1 To Start Game"
+// 	}
+// 	// we dont need to this anymore and are just creating copies for joke every time to board is made :D
+// 	Players := make([]Player, len(State.Players))
+// 	copy(Players, State.Players)
 
-	// also how can we just edit the little bits of strings that change is that better I dunno if a string builder
-	// is the most ideal or we go back to our idea of representing the board in an array with each
-	switch len(State.Players) {
-	case 3:
-		sb.WriteString(fmt.Sprintf(`|%11d`, Players[2].Score))
-		sb.WriteString(fmt.Sprintf(`%11d|`, 0))
-		sb.WriteString("\n")
-		sb.WriteString(fmt.Sprintf(`.=-=-=-=-=-=\              %s               /=-=-=-=-=-=.`, PlayerMessage) + "\n")
-		sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[2].Name, "No Player"))
+// 	// hardcoded minimum of two players atm
+// 	var sb strings.Builder
+// 	sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[0].Name, Players[1].Name))
+// 	sb.WriteString(strconv.Itoa(len(sb.String())))
+// 	sb.WriteString("\n")
+// 	sb.WriteString(`.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.`)
+// 	sb.WriteString("\n")
+// 	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, Players[0].Score, Players[1].Score))
+// 	sb.WriteString("\n")
+// 	sb.WriteString(buildDice(State.Roll))
+// 	sb.WriteString("\n")
 
-	case 4:
-		sb.WriteString(fmt.Sprintf(`|%11d`, Players[2].Score))
-		sb.WriteString(fmt.Sprintf(`%11d|`, Players[3].Score))
-		sb.WriteString("\n")
-		sb.WriteString(fmt.Sprintf(`.=-=-=-=-=-=\              %s               /=-=-=-=-=-=.`, PlayerMessage) + "\n")
-		sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[2].Name, Players[3].Name))
-	}
+// 	// im br0ke
+// 	// I think I just need to re think how this board is being made entirely cause it sucks rn and its v rigid
+// 	// and the spacings are awkward, dice padding isnt working and its kind of a mess
 
-	return sb.String()
+// 	// also how can we just edit the little bits of strings that change is that better I dunno if a string builder
+// 	// is the most ideal or we go back to our idea of representing the board in an array with each
+// 	switch len(State.Players) {
+// 	case 3:
+// 		sb.WriteString(fmt.Sprintf(`|%11d`, Players[2].Score))
+// 		sb.WriteString(fmt.Sprintf(`%11d|`, 0))
+// 		sb.WriteString("\n")
+// 		sb.WriteString(fmt.Sprintf(`.=-=-=-=-=-=\              %s               /=-=-=-=-=-=.`, PlayerMessage) + "\n")
+// 		sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[2].Name, "No Player"))
 
-}
+// 	case 4:
+// 		sb.WriteString(fmt.Sprintf(`|%11d`, Players[2].Score))
+// 		sb.WriteString(fmt.Sprintf(`%11d|`, Players[3].Score))
+// 		sb.WriteString("\n")
+// 		sb.WriteString(fmt.Sprintf(`.=-=-=-=-=-=\              %s               /=-=-=-=-=-=.`, PlayerMessage) + "\n")
+// 		sb.WriteString(fmt.Sprintf(`%12s/---------------------------------------------\%-12s`, Players[2].Name, Players[3].Name))
+// 	}
 
-func buildDice(dice []int) string {
-	boardWidth := 71
+// 	return sb.String()
 
-	var sb strings.Builder
+// }
 
-	diceHeader := strings.Repeat("|=====|", len(dice))
-	diceBodyStr := ""
-	for _, die := range dice {
-		diceBodyStr += fmt.Sprintf("|  %d  |", die)
-	}
+// func buildDice(dice []int) string {
+// 	boardWidth := 71
 
-	//middle dice placement = middle - 3?
-	leftPadding := ((boardWidth / 2) - (len(diceHeader) / 2))
-	// rightPadding := (boardWidth - (leftPadding - 4))
+// 	var sb strings.Builder
 
-	fPosition := fmt.Sprintf("%*s|=====|", leftPadding, " ")
+// 	diceHeader := strings.Repeat("|=====|", len(dice))
+// 	diceBodyStr := ""
+// 	for _, die := range dice {
+// 		diceBodyStr += fmt.Sprintf("|  %d  |", die)
+// 	}
 
-	rPadding := (boardWidth - len(fPosition)) - 2 // -2 accounts for the two empty strings we add ??
+// 	//middle dice placement = middle - 3?
+// 	leftPadding := ((boardWidth / 2) - (len(diceHeader) / 2))
+// 	// rightPadding := (boardWidth - (leftPadding - 4))
 
-	sb.WriteString(fmt.Sprintf("|%s|", (fmt.Sprintf("%*s%s%*s", leftPadding, " ", diceHeader, rPadding, " "))))
-	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("|%s|", (fmt.Sprintf("%*s%s%*s", leftPadding, " ", diceBodyStr, rPadding, " "))))
-	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("|%s|", (fmt.Sprintf("%*s%s%*s", leftPadding, " ", diceHeader, rPadding, " "))))
+// 	fPosition := fmt.Sprintf("%*s|=====|", leftPadding, " ")
 
-	return sb.String()
-}
+// 	rPadding := (boardWidth - len(fPosition)) - 2 // -2 accounts for the two empty strings we add ??
+
+// 	sb.WriteString(fmt.Sprintf("|%s|", (fmt.Sprintf("%*s%s%*s", leftPadding, " ", diceHeader, rPadding, " "))))
+// 	sb.WriteString("\n")
+// 	sb.WriteString(fmt.Sprintf("|%s|", (fmt.Sprintf("%*s%s%*s", leftPadding, " ", diceBodyStr, rPadding, " "))))
+// 	sb.WriteString("\n")
+// 	sb.WriteString(fmt.Sprintf("|%s|", (fmt.Sprintf("%*s%s%*s", leftPadding, " ", diceHeader, rPadding, " "))))
+
+// 	return sb.String()
+// }
 
 func main() {
 
