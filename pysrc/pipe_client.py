@@ -8,7 +8,6 @@ class PipeClient:
             os.mkfifo(self._pipename)
 
     def pipe(self, msg: str):
-        print(self._pipename)
         with open(self._pipename, "w") as p:
             p.write(f"{msg};")
 

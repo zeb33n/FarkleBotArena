@@ -3,6 +3,7 @@
 #include <pthread.h>  //maybe use threads instead
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -78,6 +79,7 @@ void cp_file(char* source, char* target) {
   close(tgtfd);
 }
 
+// clean up this func too many pointyers
 struct Player register_player(int clientfd, char id) {
   char playername[11] = {0};
   char prpipe[48] = {0};
@@ -98,8 +100,9 @@ struct Player register_player(int clientfd, char id) {
     exit(err);
   }
   cp_file("../pysrc/player.py", target);
-  printf("when rgeistered: prpipe: %s\n", prpipe);
-  struct Player player = {clientfd, id, *pspipe, *prpipe};
+  struct Player player = {clientfd, id, "", ""};
+  strcpy(player.spipename, pspipe);
+  strcpy(player.rpipename, prpipe);
   return player;
 }
 
@@ -136,14 +139,12 @@ int await_game_start(struct Player player) {
   int sendfd = open("start", O_WRONLY);
   char* out = "1";
   struct pollfd fd[] = {{player.clientfd, POLLIN, 0}};
-  printf("3\n");
   while (1) {
     int err = poll(fd, 1, 50000);
     if (err == -1) {
       perror("Poll error");
     }
     if (fd[0].revents & POLLIN) {
-      printf("bananas\n");
       int err = write(sendfd, out, 1);
       close(sendfd);
       if (err == -1) {
@@ -180,7 +181,7 @@ int main() {
   struct Player player = register_players(socketfd);
 
   printf("playerid: %i registered\n", player.num);
-  // printf("print 3: %s\n", player.rpipename);
+  printf("rpipename: %s\n", player.rpipename);
 
   await_game_start(player);
 
