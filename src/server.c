@@ -84,7 +84,7 @@ struct Player register_player(int clientfd, char id) {
   char pspipe[48] = {0};
   char target[48] = {0};
   sprintf(playername, "player%i", id);
-  sprintf(prpipe, "../pipes/r%s", playername);
+  sprintf(prpipe, "../pipes/r%s", playername);  // buffer overflow posibl
   sprintf(pspipe, "../pipes/s%s", playername);
   sprintf(target, "../bots/%s.py", playername);
   int err = mkfifo(prpipe, 0666);
@@ -98,6 +98,7 @@ struct Player register_player(int clientfd, char id) {
     exit(err);
   }
   cp_file("../pysrc/player.py", target);
+  printf("when rgeistered: prpipe: %s\n", prpipe);
   struct Player player = {clientfd, id, *pspipe, *prpipe};
   return player;
 }
@@ -179,10 +180,14 @@ int main() {
   struct Player player = register_players(socketfd);
 
   printf("playerid: %i registered\n", player.num);
+  // printf("print 3: %s\n", player.rpipename);
 
   await_game_start(player);
 
   int rpipefd = open(player.rpipename, O_RDONLY);
+  if (rpipefd < 0) {
+    perror("canna open pipe");
+  }
 
   struct pollfd fds[2] = {{rpipefd, POLLIN, 0}, {player.clientfd, POLLIN, 0}};
   for (;;) {
@@ -191,6 +196,7 @@ int main() {
       perror("Poll error");
       return err;
     }
+
     if (fds[0].revents & POLLIN) {
       printf("here\n");
       int gs_err = send_game_state(rpipefd, player.clientfd);

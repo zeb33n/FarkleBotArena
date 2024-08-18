@@ -75,7 +75,11 @@ class App:
         await_game_start()
         print("game starting")
         self.bots = self.load_bots()
-        self.pipes = [PipeClient(f"../pipes/r{key}") for key in self.bots.keys()]
+        self.pipes = [
+            PipeClient(f"../pipes/r{key}")
+            for key in self.bots.keys()
+            if "player" in key
+        ]
         [atexit.register(p.cleanup) for p in self.pipes]
         self.game_state = GameState({name: 0 for name in self.bots}, 6, 0, [], "")
 
@@ -97,10 +101,8 @@ class App:
                         self.game_state.roll
                     )
                     self.game_state.round_score += score
-                    print(score)
                     for p in self.pipes:
                         p.pipe(self.game_state.to_tui())
-                    print("banana")
                     if score == 0:
                         self.game_state.num_dice = 6
                         break
