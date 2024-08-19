@@ -18,7 +18,6 @@ struct Player {
 };
 
 int send_game_state(int pipefd, int clientfd) {
-  printf("noice\n");
   char game_state[1024] = {0};
 
   char c = 0;
@@ -38,6 +37,8 @@ int send_game_state(int pipefd, int clientfd) {
   return 0;
 }
 
+// if clients send out of sync we get stuck waiting for
+// python to read something that never comes
 int recv_client_input(char* spipename, int clientfd) {
   char buffer[1] = {0};
   if (recv(clientfd, buffer, 1, 0) == 0) {
@@ -50,7 +51,7 @@ int recv_client_input(char* spipename, int clientfd) {
   }
   int playerfd = open(spipename, O_WRONLY);
   write(playerfd, buffer, 1);
-  printf("%s\n", buffer);
+  printf("pipe: %s\nmsg:%s\n", spipename, buffer);
   close(playerfd);
   return 0;
 }
@@ -79,34 +80,30 @@ void cp_file(char* source, char* target) {
   close(tgtfd);
 }
 
-// clean up this func too many pointyers
 struct Player register_player(int clientfd, char id) {
+  struct Player player = {clientfd, id, "", ""};
   char playername[11] = {0};
-  char prpipe[48] = {0};
-  char pspipe[48] = {0};
   char target[48] = {0};
+  // potential buffer overflow?
   sprintf(playername, "player%i", id);
-  sprintf(prpipe, "../pipes/r%s", playername);  // buffer overflow posibl
-  sprintf(pspipe, "../pipes/s%s", playername);
+  sprintf(player.rpipename, "../pipes/r%s", playername);
+  sprintf(player.spipename, "../pipes/s%s", playername);
   sprintf(target, "../bots/%s.py", playername);
-  int err = mkfifo(prpipe, 0666);
+  int err = mkfifo(player.rpipename, 0666);
   if (err < 0) {
     perror("fifo error");
     exit(err);
   }
-  err = mkfifo(pspipe, 0666);
+  err = mkfifo(player.spipename, 0666);
   if (err < 0) {
     perror("fifo error");
     exit(err);
   }
   cp_file("../pysrc/player.py", target);
-  struct Player player = {clientfd, id, "", ""};
-  strcpy(player.spipename, pspipe);
-  strcpy(player.rpipename, prpipe);
+  strcpy(player.spipename, player.spipename);
   return player;
 }
 
-// TODO! use fork for multiple connections!
 struct Player register_players(int socketfd) {
   char number_of_conn = 0;
   int clientfd;
@@ -131,11 +128,6 @@ int await_game_start(struct Player player) {
   if (player.num != 1) {
     return 0;
   }
-  // //int err = send(player.clientfd, "hello player 1", 48, 0);
-  // if (err == -1) {
-  //   perror("Send Error:");
-  //   exit(err);
-  // }
   int sendfd = open("start", O_WRONLY);
   char* out = "1";
   struct pollfd fd[] = {{player.clientfd, POLLIN, 0}};
@@ -155,12 +147,6 @@ int await_game_start(struct Player player) {
     }
   }
 }
-
-// pipe into file with player tag
-
-// players join into lobby
-// when lobby is populated send message to game loop to start
-// ie when all players have readyed
 
 int main() {
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -199,14 +185,12 @@ int main() {
     }
 
     if (fds[0].revents & POLLIN) {
-      printf("here\n");
       int gs_err = send_game_state(rpipefd, player.clientfd);
       if (gs_err == -1) {
         return -1;
       }
 
     } else if (fds[1].revents & POLLIN) {
-      printf("there\n");
       int exit = recv_client_input(player.spipename, player.clientfd);
       if (exit) {
         return exit;

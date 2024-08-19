@@ -1,5 +1,6 @@
 #!bin/bash
 
+rm ../pipes/*
 python ../pysrc/main.py & 
 main_id=$! # id of most recent background process
 ./server
