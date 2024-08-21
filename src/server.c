@@ -37,13 +37,16 @@ int send_game_state(int pipefd, int clientfd) {
   return 0;
 }
 
-// if clients send out of sync we get stuck waiting for
-// python to read something that never comes
 int recv_client_input(char* spipename, int clientfd) {
-  char buffer[1] = {0};
-  if (recv(clientfd, buffer, 1, 0) == 0) {
+  // char 13 and char 10 recieved alongside message
+  char buffer[3] = {0};
+  if (recv(clientfd, buffer, 3, 0) == 0) {
     printf("exiting\n");
     return 1;
+  }
+  int i;
+  for (i = 0; i < 3; i++) {
+    printf("%i:", buffer[i]);
   }
   if (*buffer == 'q') {
     printf("exiting\n");
@@ -136,8 +139,16 @@ int await_game_start(struct Player player) {
     if (err == -1) {
       perror("Poll error");
     }
+
     if (fd[0].revents & POLLIN) {
-      int err = write(sendfd, out, 1);
+      char _[3] = {0};
+      int err = read(player.clientfd, _, 3);
+      if (err == -1) {
+        perror("readerror");
+        return -1;
+      }
+
+      err = write(sendfd, out, 1);
       close(sendfd);
       if (err == -1) {
         perror("writeerror");
@@ -147,6 +158,10 @@ int await_game_start(struct Player player) {
     }
   }
 }
+
+// socket initialiser - reader - sender
+// pipe reader - sender
+//
 
 int main() {
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
