@@ -1,22 +1,4 @@
-[main]2024/07/29 18:37:21 main.go:241: new log
-[main]2024/07/29 18:37:21 main.go:137: connected success &{{0xc0000c6200}}
-[main]2024/07/29 18:37:21 main.go:248: {0xc0000aa870 {[{player 1 0} {player 2 0} {player 3 0} {player 4 0}] 6 0 [1 2 3 4 5 6] waiting for connections}     player 1/---------------------------------------------\player 2    
-.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.
-|          0/---------------------------------------------\0          |
-|              |=====||=====||=====||=====||=====||=====|                                                |
-|              |  1  ||  2  ||  3  ||  4  ||  5  ||  6  |                                                |
-|              |=====||=====||=====||=====||=====||=====|                                                |
-|          0          0|
-.=-=-=-=-=-=\              Press 1 To Start Game               /=-=-=-=-=-=.
-    player 3/---------------------------------------------\player 4     0xc0000a60b8 0xc000096180 0xc0000961e0}
-[main]2024/07/29 18:37:21 main.go:249: new model {0xc0000aa870 {[{player 1 0} {player 2 0} {player 3 0} {player 4 0}] 6 0 [1 2 3 4 5 6] waiting for connections}     player 1/---------------------------------------------\player 2    
-.=-=-=-=-=-=\              FARKLE BOT ARENA               /=-=-=-=-=-=.
-|          0/---------------------------------------------\0          |
-|              |=====||=====||=====||=====||=====||=====|                                                |
-|              |  1  ||  2  ||  3  ||  4  ||  5  ||  6  |                                                |
-|              |=====||=====||=====||=====||=====||=====|                                                |
-|          0          0|
-.=-=-=-=-=-=\              Press 1 To Start Game               /=-=-=-=-=-=.
-    player 3/---------------------------------------------\player 4     0xc0000a60b8 0xc000096180 0xc0000961e0}
-[main]2024/07/29 18:37:34 main.go:67: "bo[{"name": "bot", "score}, ne": 0}, "pyer0", "sco: "player8721", corme": "per8758", "score": 0}, {"name": "pcore": 0{layer9": 0}, {"name": "player9154", "score": 0}, {"name": "player9471", "sc": "plyr40,"cr": 0}, {"name": udr50,"cr" },"u_ie:0 rudsoe:10,"ol:[,5
-[main]2024/07/29 18:37:34 main.go:295: decoding failed json: cannot unmarshal string into Go value of type main.GameState
+[main]2024/08/31 10:04:36 main.go:241: new log
+[main]2024/08/31 10:04:36 main.go:246: dial tcp 127.0.0.1:4123: connect: connection refused
+[main]2024/08/31 10:04:36 main.go:248: {<nil> {[] 0 0 [] } failed to connect <nil> <nil> <nil>}
+[main]2024/08/31 10:04:36 main.go:249: new model {<nil> {[] 0 0 [] } failed to connect <nil> <nil> <nil>}
