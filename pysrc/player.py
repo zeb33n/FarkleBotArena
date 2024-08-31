@@ -1,6 +1,5 @@
-with open(
-    __file__.rsplit("/", 2)[0] + "/" + __file__.rsplit("/", 1)[1].replace(".py", "")
-) as p:
+player_num = __file__.replace(".py", "")[-1]
+with open(__file__.rsplit("/", 2)[0] + f"/pipes/splayer{player_num}") as p:
     while True:
         data = p.read()
         if data:
