@@ -1,5 +1,8 @@
 package game
 
+// I dont know if game is the right name for this package but it is the package that
+// interfcts with the game server reading the current state and sending player decisions
+
 import "net"
 
 type client struct {
@@ -14,9 +17,9 @@ func NewClient() *client {
 	return &client{}
 }
 
-func (c client) Connect(addr string) error {
+func (c *client) Connect(addr string) error {
 
-	conn, err := net.Dial("tcp", "localhost:4123")
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return err
 	}
@@ -26,7 +29,8 @@ func (c client) Connect(addr string) error {
 	return nil
 }
 
-func (c client) Read() error {
+func (c *client) Read() {
+	// Channel is updated with new game state from the server
 	go func() {
 		buffer := make([]byte, 1024)
 		for {
@@ -48,13 +52,12 @@ func (c client) Read() error {
 
 		}
 	}()
-	return nil
 }
 
 // pretty sure the client at the moment only accepts/reads 1s and expects it for
 // players roll decision
 
-func (c client) Respond(r []byte) error {
+func (c *client) Respond(r []byte) error {
 	_, err := c.conn.Write(r)
 	if err != nil {
 		return err
