@@ -5,36 +5,30 @@ import (
 	"encoding/json"
 	"log"
 	"net"
-	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	c "github.com/lregs/FarkleBotArena/common"
 )
 
 // pls can we make a customise tab where we can change the dice colour or something would be awesome
 
-type Player struct {
-	Name  string `json:"name"`
-	Score int    `json:"score"`
+type gameServer interface {
+	Connect() error             // establish a connection type within implementation
+	Read() (chan []byte, error) // returns the channel that will have game data in them
+	Write([]byte) error         // writes a response to the server - 1 to play atm
 }
 
-type GameState struct {
-	Players    []Player `json:"bots"`
-	Numdice    int      `json:"num_dice"`
-	RoundScore int      `json:"round_score"`
-	Roll       []int    `json:"roll"`
-	Turn       string   `json:"turn"`
+type TcpGameServer struct {
+	conn    net.Conn
+	readCh  chan []byte
+	closeCh chan struct{}
 }
 
-// im guesing well move tcp out of this at some point and leave this to handle ui
-type BoardModel struct {
-	log         *log.Logger
-	game        GameState
-	screen      string
-	tcp         net.Conn
-	tcpDataChan chan []byte
-	tcpErrChan  chan error
-}
-
+//	func NewTCPGameServer() *TcpGameServer{
+//		return &TcpGameServer {
+//			make
+//		}
+//	}
 type startReading struct{}
 
 type tcpResponse []byte
@@ -134,7 +128,7 @@ func InitialBoardModel(log *log.Logger) (BoardModel, error) {
 
 	log.Printf("connected success %v", conn)
 
-	defaultGameState := GameState{
+	defaultGameState := c.GameState{
 		Players: []Player{
 			{Name: "player 1", Score: 0},
 			{Name: "player 2", Score: 0},
@@ -156,6 +150,78 @@ func InitialBoardModel(log *log.Logger) (BoardModel, error) {
 		tcpErrChan:  make(chan error),
 	}, nil
 
+}
+
+func main() {
+
+	log := NewLogger("log.txt")
+
+	log.Println("new log")
+
+	// includes placeholder values and initialised tcp connection on the mode
+	m, err := InitialBoardModel(log)
+	if err != nil {
+		log.Print(err)
+	}
+	log.Print(m)
+	log.Printf("new model %v", m)
+
+	// if err != nil {
+	// 	log.Printf("tcp failed %s", err)
+	// }
+
+	p := tea.NewProgram(m)
+	if _, err := p.Run(); err != nil {
+		log.Printf("something bad happened %s", err)
+	}
+
+}
+
+// func NewLogger(filename string) *log.Logger {
+// 	logfile, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+// 	if err != nil {
+// 		panic("bad file")
+// 	}
+// 	return log.New(logfile, "[main]", log.Ldate|log.Ltime|log.Lshortfile)
+// }
+
+// init starts reading immediately, server and game(?) need to be started atm for it to work as it will
+// return a nil pointer panic if there is no connection for it to read from
+func (m BoardModel) Init() tea.Cmd {
+	m.startReading()
+	return m.monitorChannels()
+}
+
+func (m BoardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "ctrl+c", "esc":
+			return m, tea.Quit
+		case "1":
+			return m, m.sendResponse()
+
+		}
+
+	// case startReading:
+	// 	return m, m.readCmd()
+
+	case tcpResponse:
+		var gs GameState
+		r := bytes.NewReader(msg)
+		if err := json.NewDecoder(r).Decode(&gs); err != nil {
+			m.log.Printf("decoding failed %s", err)
+		}
+		m.screen = BuildBoard(gs)
+		return m, m.monitorChannels()
+
+	}
+	return m, nil
+}
+
+func (m BoardModel) View() string {
+	// m.log.Print(m.screen)
+	return m.screen
 }
 
 // func BuildBoard(State GameState) string {
@@ -238,75 +304,3 @@ func InitialBoardModel(log *log.Logger) (BoardModel, error) {
 
 // 	return sb.String()
 // }
-
-func main() {
-
-	log := NewLogger("log.txt")
-
-	log.Println("new log")
-
-	// includes placeholder values and initialised tcp connection on the mode
-	m, err := InitialBoardModel(log)
-	if err != nil {
-		log.Print(err)
-	}
-	log.Print(m)
-	log.Printf("new model %v", m)
-
-	// if err != nil {
-	// 	log.Printf("tcp failed %s", err)
-	// }
-
-	p := tea.NewProgram(m)
-	if _, err := p.Run(); err != nil {
-		log.Printf("something bad happened %s", err)
-	}
-
-}
-
-func NewLogger(filename string) *log.Logger {
-	logfile, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
-	if err != nil {
-		panic("bad file")
-	}
-	return log.New(logfile, "[main]", log.Ldate|log.Ltime|log.Lshortfile)
-}
-
-// init starts reading immediately, server and game(?) need to be started atm for it to work as it will
-// return a nil pointer panic if there is no connection for it to read from
-func (m BoardModel) Init() tea.Cmd {
-	m.startReading()
-	return m.monitorChannels()
-}
-
-func (m BoardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c", "esc":
-			return m, tea.Quit
-		case "1":
-			return m, m.sendResponse()
-
-		}
-
-	// case startReading:
-	// 	return m, m.readCmd()
-
-	case tcpResponse:
-		var gs GameState
-		r := bytes.NewReader(msg)
-		if err := json.NewDecoder(r).Decode(&gs); err != nil {
-			m.log.Printf("decoding failed %s", err)
-		}
-		m.screen = BuildBoard(gs)
-		return m, m.monitorChannels()
-
-	}
-	return m, nil
-}
-
-func (m BoardModel) View() string {
-	// m.log.Print(m.screen)
-	return m.screen
-}

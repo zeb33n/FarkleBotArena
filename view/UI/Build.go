@@ -1,12 +1,25 @@
-package main
+package ui
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
+
+	c "github.com/lregs/FarkleBotArena/common"
 )
 
-func BuildBoard(State GameState) string {
+type UI struct {
+	log *log.Logger
+}
+
+func NewUI(log *log.Logger) *UI {
+	return &UI{
+		log: log,
+	}
+}
+
+func (u *UI) BuildUI(State c.GameState) string {
 
 	// width, height, err := term.GetSize(0)
 	// if err != nil {
@@ -18,7 +31,7 @@ func BuildBoard(State GameState) string {
 		PlayerMessage = "Press 1 To Start Game"
 	}
 	// we dont need to this anymore and are just creating copies for joke every time to board is made :D
-	Players := make([]Player, len(State.Players))
+	Players := make([]c.Player, len(State.Players))
 	copy(Players, State.Players)
 
 	// hardcoded minimum of two players atm
