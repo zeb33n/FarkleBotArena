@@ -16,6 +16,7 @@ type state int
 const (
 	WelcomeState = iota
 	Playing
+	FailedConnection
 )
 
 // This struct will hold all the methods for rendering the different pages within the UI.
@@ -40,13 +41,20 @@ func (u *UI) Render() string {
 	switch u.CurrState {
 	case WelcomeState:
 		return u.renderWelcomeState()
+	case FailedConnection:
+		return u.renderFailedConnection()
 	default:
 		return "you have failed to assign the state properly mate :)"
 	}
 
 }
 
+func (u *UI) renderFailedConnection() string {
+	return "Failed to connect, please try again by pressing c"
+}
+
 func (u *UI) renderWelcomeState() string {
+	// Todo - can make checkboxes and enter with "available" servers to join?
 	return "Welcome, Press C To Connect"
 }
 

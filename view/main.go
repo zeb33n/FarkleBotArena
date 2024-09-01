@@ -34,6 +34,18 @@ type BaseModel struct {
 	Display string
 }
 
+type ConnectionSuccess struct{}
+type ConnectionFailed struct{ err string }
+
+func (m *BaseModel) AttemptConnection(addr string) tea.Msg {
+	err := m.client.Connect(addr)
+	if err != nil {
+		return ConnectionFailed{err: err.Error()}
+	}
+
+	return ConnectionSuccess{}
+}
+
 func InitialBaseModel(log *log.Logger) *BaseModel {
 	return &BaseModel{
 		client: Game.NewClient(),
@@ -54,25 +66,34 @@ func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "c":
 			if m.UI.CurrState == UI.WelcomeState {
-				// connect
+				// Pass the returned message to the Bubble Tea framework
+				return m, func() tea.Msg {
+					return m.AttemptConnection("localhost:4123")
+				}
 			}
 		}
-
-		// case startReading:
-		// 	return m, m.readCmd()
-
-		// case tcpResponse:
-		// 	var gs GameData
-		// 	r := bytes.NewReader(msg)
-		// 	if err := json.NewDecoder(r).Decode(&gs); err != nil {
-		// 		m.log.Printf("decoding failed %s", err)
-		// 	}
-		// 	m.screen = BuildBoard(gs)
-		// 	return m, m.monitorChannels()
-
-		// }
 		return m, nil
+	case ConnectionFailed:
+		m.UI.CurrState = UI.FailedConnection
+		return m, nil
+	case ConnectionSuccess:
+		// we want to render the board and start waiting for the game to start basically
+
 	}
+
+	// case startReading:
+	// 	return m, m.readCmd()
+
+	// case tcpResponse:
+	// 	var gs GameData
+	// 	r := bytes.NewReader(msg)
+	// 	if err := json.NewDecoder(r).Decode(&gs); err != nil {
+	// 		m.log.Printf("decoding failed %s", err)
+	// 	}
+	// 	m.screen = BuildBoard(gs)
+	// 	return m, m.monitorChannels()
+
+	// }
 
 	return m, nil
 }
