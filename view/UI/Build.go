@@ -9,8 +9,20 @@ import (
 	c "github.com/lregs/FarkleBotArena/common"
 )
 
+// I dont know if I want to track state at base model or ui level but atm its the state of the ui
+// so I keep here I think
+type state int
+
+const (
+	WelcomeState = iota
+	Playing
+)
+
+// This struct will hold all the methods for rendering the different pages within the UI.
 type UI struct {
-	log *log.Logger
+	CurrState state
+	data      c.GameData
+	log       *log.Logger
 }
 
 func NewUI(log *log.Logger) *UI {
@@ -19,7 +31,26 @@ func NewUI(log *log.Logger) *UI {
 	}
 }
 
-func (u *UI) BuildUI(State c.GameState) string {
+func (u *UI) Update(newState state, data c.GameData) {
+	u.CurrState = newState
+	u.data = data
+}
+
+func (u *UI) Render() string {
+	switch u.CurrState {
+	case WelcomeState:
+		return u.renderWelcomeState()
+	default:
+		return "you have failed to assign the state properly mate :)"
+	}
+
+}
+
+func (u *UI) renderWelcomeState() string {
+	return "Welcome, Press C To Connect"
+}
+
+func (u *UI) BuildUI(State c.GameData) string {
 
 	// width, height, err := term.GetSize(0)
 	// if err != nil {

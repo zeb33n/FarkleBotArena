@@ -1,6 +1,6 @@
 package common
 
-type GameState struct {
+type GameData struct {
 	Players    []Player `json:"bots"`
 	Numdice    int      `json:"num_dice"`
 	RoundScore int      `json:"round_score"`

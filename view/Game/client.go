@@ -5,7 +5,7 @@ package game
 
 import "net"
 
-type client struct {
+type Client struct {
 	conn    net.Conn
 	DataCh  chan []byte
 	ErrCh   chan error
@@ -13,11 +13,11 @@ type client struct {
 }
 
 // returns an empty client. Connect/close will be called via tea.Cmd through the main model
-func NewClient() *client {
-	return &client{}
+func NewClient() *Client {
+	return &Client{}
 }
 
-func (c *client) Connect(addr string) error {
+func (c *Client) Connect(addr string) error {
 
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
@@ -29,7 +29,7 @@ func (c *client) Connect(addr string) error {
 	return nil
 }
 
-func (c *client) Read() {
+func (c *Client) Read() {
 	// Channel is updated with new game state from the server
 	go func() {
 		buffer := make([]byte, 1024)
@@ -57,7 +57,7 @@ func (c *client) Read() {
 // pretty sure the client at the moment only accepts/reads 1s and expects it for
 // players roll decision
 
-func (c *client) Respond(r []byte) error {
+func (c *Client) Respond(r []byte) error {
 	_, err := c.conn.Write(r)
 	if err != nil {
 		return err

@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
 	Game "github.com/lregs/FarkleBotArena/Game"
+	UI "github.com/lregs/FarkleBotArena/UI"
+	c "github.com/lregs/FarkleBotArena/common"
 )
 
 // pls can we make a customise tab where we can change the dice colour or something would be awesome
@@ -24,16 +25,61 @@ type tcpReadError string
 
 type userinput string
 
+// Base model will hold the UI and Game client. It will be monitored within bubbletea loop
+// and call ui and game methods based on user input
+
 type BaseModel struct {
-	GameClient
+	client  *Game.Client
+	UI      *UI.UI // this naming is horrible :)
 	Display string
 }
 
-func InitialBaseModel() *BaseModel {
+func InitialBaseModel(log *log.Logger) *BaseModel {
 	return &BaseModel{
-		GameClient: Game.NewClient(),
-		Display:    "Press C To Connect To a New Game!",
+		client: Game.NewClient(),
+		UI:     UI.NewUI(log), // shouldnt be creating a new logger here
 	}
+}
+
+func (m *BaseModel) Init() tea.Cmd {
+	// returning nil because nothing is needed at the begining
+	return nil
+}
+
+func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "ctrl+c", "esc":
+			return m, tea.Quit
+		case "c":
+			if m.UI.CurrState == UI.WelcomeState {
+				// connect
+			}
+		}
+
+		// case startReading:
+		// 	return m, m.readCmd()
+
+		// case tcpResponse:
+		// 	var gs GameData
+		// 	r := bytes.NewReader(msg)
+		// 	if err := json.NewDecoder(r).Decode(&gs); err != nil {
+		// 		m.log.Printf("decoding failed %s", err)
+		// 	}
+		// 	m.screen = BuildBoard(gs)
+		// 	return m, m.monitorChannels()
+
+		// }
+		return m, nil
+	}
+
+	return m, nil
+}
+
+func (m *BaseModel) View() string {
+	// m.log.Print(m.screen)
+	return m.UI.Render()
 }
 
 // method on pointer because we're reading from the channels I THINK?!s
@@ -51,42 +97,14 @@ func InitialBaseModel() *BaseModel {
 
 // }
 
-// func (m *BoardModel) readCmd() tea.Cmd {
-// 	return func() tea.Msg {
-// 		m.log.Print("reading")
-// 		buffer := make([]byte, 256)
-// 		n, err := m.tcp.Read(buffer)
-// 		if err != nil {
-// 			return tcpReadError(err.Error())
-// 		}
-
-// 		cleanedBuff := []byte{}
-
-// 		for _, b := range buffer[:n] {
-// 			if !(b == 0) {
-// 				cleanedBuff = append(cleanedBuff, b)
-// 			} else {
-// 				break
-// 			}
-// 		}
-
-// 		m.log.Print((string(tcpResponse(cleanedBuff))))
-
-// 		return tcpResponse(cleanedBuff)
-
-// 	}
-// }
-
-//
-
 func main() {
 
-	log := NewLogger("log.txt")
+	log := c.NewLogger("log.txt")
 
 	log.Println("new log")
 
 	// includes placeholder values and initialised tcp connection on the mode
-	m := InitialBaseModel()
+	m := InitialBaseModel(log)
 
 	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
@@ -97,42 +115,6 @@ func main() {
 
 // init starts reading immediately, server and game(?) need to be started atm for it to work as it will
 // return a nil pointer panic if there is no connection for it to read from
-func (m BaseModel) Init() tea.Cmd {
-	m.startReading()
-	return m.monitorChannels()
-}
-
-func (m BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c", "esc":
-			return m, tea.Quit
-		case "1":
-			return m, m.sendResponse()
-
-		}
-
-	// case startReading:
-	// 	return m, m.readCmd()
-
-	case tcpResponse:
-		var gs GameState
-		r := bytes.NewReader(msg)
-		if err := json.NewDecoder(r).Decode(&gs); err != nil {
-			m.log.Printf("decoding failed %s", err)
-		}
-		m.screen = BuildBoard(gs)
-		return m, m.monitorChannels()
-
-	}
-	return m, nil
-}
-
-func (m BaseModel) View() string {
-	// m.log.Print(m.screen)
-	return m.Display
-}
 
 // default model to be displayed by bt
 // func InitialBoardModel(log *log.Logger) (BoardModel, error) {
@@ -144,7 +126,7 @@ func (m BaseModel) View() string {
 
 // 	log.Printf("connected success %v", conn)
 
-// 	defaultGameState := c.GameState{
+// 	defaultGameData := c.GameData{
 // 		Players: []Player{
 // 			{Name: "player 1", Score: 0},
 // 			{Name: "player 2", Score: 0},
@@ -158,8 +140,8 @@ func (m BaseModel) View() string {
 // 	}
 
 // 	return BoardModel{
-// 		game:        defaultGameState,
-// 		screen:      BuildBoard(defaultGameState),
+// 		game:        defaultGameData,
+// 		screen:      BuildBoard(defaultGameData),
 // 		tcp:         conn,
 // 		log:         log,
 // 		tcpDataChan: make(chan []byte),
