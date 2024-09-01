@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -34,6 +37,13 @@ type BaseModel struct {
 	Display string
 }
 
+func InitialBaseModel(log *log.Logger) *BaseModel {
+	return &BaseModel{
+		client: Game.NewClient(),
+		UI:     UI.NewUI(log), // shouldnt be creating a new logger here
+	}
+}
+
 type ConnectionSuccess struct{}
 type ConnectionFailed struct{ err string }
 
@@ -42,15 +52,34 @@ func (m *BaseModel) AttemptConnection(addr string) tea.Msg {
 	if err != nil {
 		return ConnectionFailed{err: err.Error()}
 	}
-
 	return ConnectionSuccess{}
 }
 
-func InitialBaseModel(log *log.Logger) *BaseModel {
-	return &BaseModel{
-		client: Game.NewClient(),
-		UI:     UI.NewUI(log), // shouldnt be creating a new logger here
+type FailedRespondingToServer struct{}
+type SuccessfulResponse struct{}
+
+func (m *BaseModel) sendResponse() tea.Cmd {
+	return func() tea.Msg {
+
+		err := m.client.Respond([]byte{1})
+		if err != nil {
+			return FailedRespondingToServer{}
+		}
+		return SuccessfulResponse{}
 	}
+
+}
+
+func (m *BaseModel) monitorChannels() tea.Cmd {
+	return func() tea.Msg {
+		select {
+		case data := <-m.client.DataCh:
+			return tcpResponse(data)
+		case err := <-m.client.ErrCh:
+			return tcpReadError(err.Error())
+		}
+	}
+
 }
 
 func (m *BaseModel) Init() tea.Cmd {
@@ -71,6 +100,10 @@ func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m.AttemptConnection("localhost:4123")
 				}
 			}
+		case "1":
+			if m.UI.CurrState == UI.SuccessfulConnection {
+				return m, m.sendResponse()
+			}
 		}
 		return m, nil
 	case ConnectionFailed:
@@ -78,22 +111,23 @@ func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case ConnectionSuccess:
 		// we want to render the board and start waiting for the game to start basically
+		m.UI.CurrState = UI.SuccessfulConnection
+		m.client.Read()
+		return m, m.monitorChannels()
+
+	case FailedRespondingToServer:
+
+	case tcpResponse:
+		var gs c.GameData
+		r := bytes.NewReader(msg)
+		if err := json.NewDecoder(r).Decode(&gs); err != nil {
+			fmt.Print("do something")
+		}
+		m.UI.Data = gs
+		m.UI.CurrState = UI.GameLive
+		return m, m.monitorChannels()
 
 	}
-
-	// case startReading:
-	// 	return m, m.readCmd()
-
-	// case tcpResponse:
-	// 	var gs GameData
-	// 	r := bytes.NewReader(msg)
-	// 	if err := json.NewDecoder(r).Decode(&gs); err != nil {
-	// 		m.log.Printf("decoding failed %s", err)
-	// 	}
-	// 	m.screen = BuildBoard(gs)
-	// 	return m, m.monitorChannels()
-
-	// }
 
 	return m, nil
 }
@@ -102,21 +136,6 @@ func (m *BaseModel) View() string {
 	// m.log.Print(m.screen)
 	return m.UI.Render()
 }
-
-// method on pointer because we're reading from the channels I THINK?!s
-// will return a msg when data is recieved in the channel and trigger the bt update functions
-// which will loop back into this
-// func (m *BoardModel) monitorChannels() tea.Cmd {
-// 	return func() tea.Msg {
-// 		select {
-// 		case data := <-m.tcpDataChan:
-// 			return tcpResponse(data)
-// 		case err := <-m.tcpErrChan:
-// 			return tcpReadError(err.Error())
-// 		}
-// 	}
-
-// }
 
 func main() {
 
@@ -133,9 +152,6 @@ func main() {
 	}
 
 }
-
-// init starts reading immediately, server and game(?) need to be started atm for it to work as it will
-// return a nil pointer panic if there is no connection for it to read from
 
 // default model to be displayed by bt
 // func InitialBoardModel(log *log.Logger) (BoardModel, error) {

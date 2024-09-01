@@ -17,12 +17,15 @@ const (
 	WelcomeState = iota
 	Playing
 	FailedConnection
+	SuccessfulConnection
+	FailedResponse
+	GameLive
 )
 
 // This struct will hold all the methods for rendering the different pages within the UI.
 type UI struct {
 	CurrState state
-	data      c.GameData
+	Data      c.GameData
 	log       *log.Logger
 }
 
@@ -34,7 +37,7 @@ func NewUI(log *log.Logger) *UI {
 
 func (u *UI) Update(newState state, data c.GameData) {
 	u.CurrState = newState
-	u.data = data
+	u.Data = data
 }
 
 func (u *UI) Render() string {
@@ -43,14 +46,30 @@ func (u *UI) Render() string {
 		return u.renderWelcomeState()
 	case FailedConnection:
 		return u.renderFailedConnection()
+	case SuccessfulConnection:
+		return u.renderSuccessfulConnection()
+	case FailedResponse:
+		return u.renderFailedResponse()
 	default:
 		return "you have failed to assign the state properly mate :)"
 	}
 
 }
 
+func (u *UI) renderFailedResponse() string {
+	return "responding to server failed"
+}
+
+func (u *UI) renderGameLive() string {
+	return u.BuildUI()
+}
+
 func (u *UI) renderFailedConnection() string {
 	return "Failed to connect, please try again by pressing c"
+}
+
+func (u *UI) renderSuccessfulConnection() string {
+	return "Great Success, Press 1 to Start!"
 }
 
 func (u *UI) renderWelcomeState() string {
@@ -58,7 +77,7 @@ func (u *UI) renderWelcomeState() string {
 	return "Welcome, Press C To Connect"
 }
 
-func (u *UI) BuildUI(State c.GameData) string {
+func (u *UI) BuildUI() string {
 
 	// width, height, err := term.GetSize(0)
 	// if err != nil {
@@ -66,12 +85,12 @@ func (u *UI) BuildUI(State c.GameData) string {
 	// }
 
 	PlayerMessage := "R OR P"
-	if State.Turn == "waiting for connections" {
+	if u.Data.Turn == "waiting for connections" {
 		PlayerMessage = "Press 1 To Start Game"
 	}
 	// we dont need to this anymore and are just creating copies for joke every time to board is made :D
-	Players := make([]c.Player, len(State.Players))
-	copy(Players, State.Players)
+	Players := make([]c.Player, len(u.Data.Players))
+	copy(Players, u.Data.Players)
 
 	// hardcoded minimum of two players atm
 	var sb strings.Builder
@@ -82,7 +101,7 @@ func (u *UI) BuildUI(State c.GameData) string {
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf(`|%11d/---------------------------------------------\%-11d|`, Players[0].Score, Players[1].Score))
 	sb.WriteString("\n")
-	sb.WriteString(buildDice(State.Roll))
+	sb.WriteString(buildDice(u.Data.Roll))
 	sb.WriteString("\n")
 
 	// im br0ke
@@ -91,7 +110,7 @@ func (u *UI) BuildUI(State c.GameData) string {
 
 	// also how can we just edit the little bits of strings that change is that better I dunno if a string builder
 	// is the most ideal or we go back to our idea of representing the board in an array with each
-	switch len(State.Players) {
+	switch len(u.Data.Players) {
 	case 3:
 		sb.WriteString(fmt.Sprintf(`|%11d`, Players[2].Score))
 		sb.WriteString(fmt.Sprintf(`%11d|`, 0))
