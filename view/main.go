@@ -45,6 +45,9 @@ func InitialBaseModel(log *log.Logger) *BaseModel {
 }
 
 type ConnectionSuccess struct{}
+
+// currently this will get stuck on connection failed and like not listen for a new connection or
+// something - not sure if its to do with ui state conditional within the update function
 type ConnectionFailed struct{ err string }
 
 func (m *BaseModel) AttemptConnection(addr string) tea.Msg {
