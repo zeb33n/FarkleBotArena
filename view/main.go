@@ -12,28 +12,23 @@ import (
 	c "github.com/lregs/FarkleBotArena/common"
 )
 
-// pls can we make a customise tab where we can change the dice colour or something would be awesome
-
 type GameClient interface {
 	Connect(addr string) error // establish a connection type within implementation
-	Read()                     // gets the first state from the game
+	Read() []byte              // gets the first state from the game
 	Respond([]byte) error      // writes a response to the server - 1 to play atm
-}
 
-type startReading struct{}
+}
 
 type tcpResponse []byte
 
 type tcpReadError string
 
-type userinput string
-
 // Base model will hold the UI and Game client. It will be monitored within bubbletea loop
 // and call ui and game methods based on user input
 
 type BaseModel struct {
-	client  *Game.Client
-	UI      *UI.UI // this naming is horrible :)
+	client  *Game.Client // should be using the GameClient interfacE?!
+	UI      *UI.UI       // this naming is horrible :)
 	Display string
 }
 
@@ -86,7 +81,6 @@ func (m *BaseModel) monitorChannels() tea.Cmd {
 }
 
 func (m *BaseModel) Init() tea.Cmd {
-	// returning nil because nothing is needed at the begining
 	return nil
 }
 
@@ -113,7 +107,6 @@ func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.UI.CurrState = UI.FailedConnection
 		return m, nil
 	case ConnectionSuccess:
-		// we want to render the board and start waiting for the game to start basically
 		m.UI.CurrState = UI.SuccessfulConnection
 		m.client.Read()
 		return m, m.monitorChannels()
@@ -155,37 +148,3 @@ func main() {
 	}
 
 }
-
-// default model to be displayed by bt
-// func InitialBoardModel(log *log.Logger) (BoardModel, error) {
-
-// 	conn, err := net.Dial("tcp", "localhost:4123")
-// 	if err != nil {
-// 		return BoardModel{screen: "failed to connect"}, err
-// 	}
-
-// 	log.Printf("connected success %v", conn)
-
-// 	defaultGameData := c.GameData{
-// 		Players: []Player{
-// 			{Name: "player 1", Score: 0},
-// 			{Name: "player 2", Score: 0},
-// 			{Name: "player 3", Score: 0},
-// 			{Name: "player 4", Score: 0},
-// 		},
-// 		Numdice:    6,
-// 		RoundScore: 00000,
-// 		Roll:       []int{1, 2, 3, 4, 5, 6},
-// 		Turn:       "waiting for connections",
-// 	}
-
-// 	return BoardModel{
-// 		game:        defaultGameData,
-// 		screen:      BuildBoard(defaultGameData),
-// 		tcp:         conn,
-// 		log:         log,
-// 		tcpDataChan: make(chan []byte),
-// 		tcpErrChan:  make(chan error),
-// 	}, nil
-
-// }
