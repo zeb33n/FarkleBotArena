@@ -6,9 +6,9 @@ package game
 import "net"
 
 type Client struct {
-	conn    net.Conn
-	DataCh  chan []byte
-	ErrCh   chan error
+	conn net.Conn
+	// DataCh  chan []byte
+	// ErrCh   chan error
 	CloseCh chan struct{}
 }
 
@@ -29,14 +29,21 @@ func (c *Client) Connect(addr string) error {
 	return nil
 }
 
-func (c *Client) Read() {
+func (c *Client) Read() (<-chan []byte, <-chan error) {
+
+	DataCh := make(chan []byte)
+	ErrCh := make(chan error)
 	// Channel is updated with new game state from the server
 	go func() {
-		buffer := make([]byte, 1024)
+
+		defer close(DataCh)
+		defer close(ErrCh)
+
 		for {
+			buffer := make([]byte, 1024)
 			n, err := c.conn.Read(buffer)
 			if err != nil {
-				c.ErrCh <- err
+				ErrCh <- err
 				// do we want to return if we have an error reading?
 			}
 
@@ -48,10 +55,13 @@ func (c *Client) Read() {
 					break
 				}
 			}
-			c.DataCh <- cleanedBuff
+			DataCh <- cleanedBuff
 
 		}
 	}()
+
+	return DataCh, ErrCh
+
 }
 
 // pretty sure the client at the moment only accepts/reads 1s and expects it for

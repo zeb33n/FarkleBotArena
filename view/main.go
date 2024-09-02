@@ -13,9 +13,9 @@ import (
 )
 
 type GameClient interface {
-	Connect(addr string) error // establish a connection type within implementation
-	Read() []byte              // gets the first state from the game
-	Respond([]byte) error      // writes a response to the server - 1 to play atm
+	Connect(addr string) error
+	Read() (<-chan []byte, <-chan error) // returns channel holding state of the game or error
+	Respond([]byte) error                // writes a response to the server - 1 to play atm
 
 }
 
@@ -27,9 +27,11 @@ type tcpReadError string
 // and call ui and game methods based on user input
 
 type BaseModel struct {
-	client  *Game.Client // should be using the GameClient interfacE?!
-	UI      *UI.UI       // this naming is horrible :)
-	Display string
+	client     GameClient // should be using the GameClient interfacE?!
+	UI         *UI.UI     // this naming is horrible :)
+	Display    string
+	GameData   <-chan []byte
+	GameErrors <-chan error
 }
 
 func InitialBaseModel(log *log.Logger) *BaseModel {
@@ -59,7 +61,7 @@ type SuccessfulResponse struct{}
 func (m *BaseModel) sendResponse() tea.Cmd {
 	return func() tea.Msg {
 
-		err := m.client.Respond([]byte{1})
+		err := m.client.Respond([]byte{'1'})
 		if err != nil {
 			return FailedRespondingToServer{}
 		}
@@ -71,9 +73,9 @@ func (m *BaseModel) sendResponse() tea.Cmd {
 func (m *BaseModel) monitorChannels() tea.Cmd {
 	return func() tea.Msg {
 		select {
-		case data := <-m.client.DataCh:
+		case data := <-m.GameData:
 			return tcpResponse(data)
-		case err := <-m.client.ErrCh:
+		case err := <-m.GameErrors:
 			return tcpReadError(err.Error())
 		}
 	}
@@ -108,7 +110,8 @@ func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case ConnectionSuccess:
 		m.UI.CurrState = UI.SuccessfulConnection
-		m.client.Read()
+		m.GameData, m.GameErrors = m.client.Read()
+		// do we want to be returning and looking up channels each update, or is there a better way to do this?
 		return m, m.monitorChannels()
 
 	case FailedRespondingToServer:
