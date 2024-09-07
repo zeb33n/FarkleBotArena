@@ -3,7 +3,10 @@ package game
 // I dont know if game is the right name for this package but it is the package that
 // interfcts with the game server reading the current state and sending player decisions
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
 type Client struct {
 	conn net.Conn
@@ -18,7 +21,6 @@ func NewClient() *Client {
 }
 
 func (c *Client) Connect(addr string) error {
-
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return err
@@ -30,12 +32,10 @@ func (c *Client) Connect(addr string) error {
 }
 
 func (c *Client) Read() (<-chan []byte, <-chan error) {
-
 	DataCh := make(chan []byte)
 	ErrCh := make(chan error)
 	// Channel is updated with new game state from the server
 	go func() {
-
 		defer close(DataCh)
 		defer close(ErrCh)
 
@@ -46,22 +46,25 @@ func (c *Client) Read() (<-chan []byte, <-chan error) {
 				ErrCh <- err
 				// do we want to return if we have an error reading?
 			}
+			fmt.Printf("normal:\n")
+			fmt.Printf("%s\n", buffer)
 
 			cleanedBuff := []byte{}
 			for _, b := range buffer[:n] {
-				if !(b == 0) {
+				if b != 0 {
 					cleanedBuff = append(cleanedBuff, b)
 				} else {
 					break
 				}
 			}
+			fmt.Printf("cleaned:\n")
+			fmt.Printf("%s\n", cleanedBuff)
 			DataCh <- cleanedBuff
 
 		}
 	}()
 
 	return DataCh, ErrCh
-
 }
 
 // pretty sure the client at the moment only accepts/reads 1s and expects it for
