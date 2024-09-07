@@ -165,7 +165,7 @@ int await_game_start(struct Player player) {
 
 int main() {
   int socketfd = socket(AF_INET, SOCK_STREAM, 0);
-  struct sockaddr_in address = {AF_INET, htons(4123), INADDR_ANY};
+  struct sockaddr_in address = {AF_INET, htons(4121), INADDR_ANY};
 
   int bind_err = bind(socketfd, &address, sizeof(address));
   if (bind_err == -1) {

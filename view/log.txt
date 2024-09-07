@@ -1,1 +1,12 @@
-[main]2024/09/02 20:41:35 main.go:143: new log
+[main]2024/09/07 09:43:12 main.go:150: new log
+[main]2024/09/07 09:43:14 main.go:118: connection success
+[main]2024/09/07 09:43:14 client.go:39: making channels
+[main]2024/09/07 09:43:14 main.go:77: do we ever monitor channels?
+[main]2024/09/07 09:43:14 client.go:45: the go routine has started
+[main]2024/09/07 09:43:14 client.go:51: buffer created inside routie
+[main]2024/09/07 09:43:14 client.go:54: why are we never inside the for loop?!
+[main]2024/09/07 09:45:13 client.go:57: read attempted
+[main]2024/09/07 09:45:13 client.go:59: error during read  EOF
+[main]2024/09/07 09:45:13 client.go:64: no error during reading of connection
+[main]2024/09/07 09:45:13 client.go:75: []
+[main]2024/09/07 09:45:13 main.go:85: do we get an error and we aren't hanldingit?

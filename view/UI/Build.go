@@ -50,6 +50,8 @@ func (u *UI) Render() string {
 		return u.renderSuccessfulConnection()
 	case FailedResponse:
 		return u.renderFailedResponse()
+	case GameLive:
+		return u.renderGameLive()
 	default:
 		return "you have failed to assign the state properly mate :)"
 	}

@@ -27,8 +27,9 @@ type tcpReadError string
 // and call ui and game methods based on user input
 
 type BaseModel struct {
-	client     GameClient // should be using the GameClient interfacE?!
-	UI         *UI.UI     // this naming is horrible :)
+	log        *log.Logger
+	client     GameClient
+	UI         *UI.UI // this naming is horrible :)
 	Display    string
 	GameData   <-chan []byte
 	GameErrors <-chan error
@@ -36,8 +37,9 @@ type BaseModel struct {
 
 func InitialBaseModel(log *log.Logger) *BaseModel {
 	return &BaseModel{
-		client: Game.NewClient(),
-		UI:     UI.NewUI(log), // shouldnt be creating a new logger here
+		log:    log,
+		client: Game.NewClient(log),
+		UI:     UI.NewUI(log),
 	}
 }
 
@@ -71,11 +73,16 @@ func (m *BaseModel) sendResponse() tea.Cmd {
 }
 
 func (m *BaseModel) monitorChannels() tea.Cmd {
+
+	m.log.Println("do we ever monitor channels?")
+
 	return func() tea.Msg {
 		select {
 		case data := <-m.GameData:
+			m.log.Println("we're here")
 			return tcpResponse(data)
 		case err := <-m.GameErrors:
+			m.log.Println("do we get an error and we aren't hanldingit?")
 			return tcpReadError(err.Error())
 		}
 	}
@@ -96,12 +103,11 @@ func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.UI.CurrState == UI.WelcomeState {
 				// Pass the returned message to the Bubble Tea framework
 				return m, func() tea.Msg {
-					return m.AttemptConnection("localhost:4123")
+					return m.AttemptConnection("localhost:4121")
 				}
 			}
 		case "1":
 			if m.UI.CurrState == UI.SuccessfulConnection {
-				return m, m.sendResponse()
 			}
 		}
 		return m, nil
@@ -109,14 +115,15 @@ func (m *BaseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.UI.CurrState = UI.FailedConnection
 		return m, nil
 	case ConnectionSuccess:
+		m.log.Println("connection success")
 		m.UI.CurrState = UI.SuccessfulConnection
 		m.GameData, m.GameErrors = m.client.Read()
-		// do we want to be returning and looking up channels each update, or is there a better way to do this?
 		return m, m.monitorChannels()
 
 	case FailedRespondingToServer:
 
 	case tcpResponse:
+		m.log.Println("have we gotten a tcp response?!")
 		var gs c.GameData
 		r := bytes.NewReader(msg)
 		if err := json.NewDecoder(r).Decode(&gs); err != nil {

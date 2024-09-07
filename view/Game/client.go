@@ -3,9 +3,13 @@ package game
 // I dont know if game is the right name for this package but it is the package that
 // interfcts with the game server reading the current state and sending player decisions
 
-import "net"
+import (
+	"log"
+	"net"
+)
 
 type Client struct {
+	log  *log.Logger
 	conn net.Conn
 	// DataCh  chan []byte
 	// ErrCh   chan error
@@ -13,8 +17,8 @@ type Client struct {
 }
 
 // returns an empty client. Connect/close will be called via tea.Cmd through the main model
-func NewClient() *Client {
-	return &Client{}
+func NewClient(log *log.Logger) *Client {
+	return &Client{log: log}
 }
 
 func (c *Client) Connect(addr string) error {
@@ -29,23 +33,35 @@ func (c *Client) Connect(addr string) error {
 	return nil
 }
 
+// I think this is getting called too early, I think we only want to call read once 1 has been pressed?
 func (c *Client) Read() (<-chan []byte, <-chan error) {
 
+	c.log.Println("making channels")
 	DataCh := make(chan []byte)
 	ErrCh := make(chan error)
 	// Channel is updated with new game state from the server
 	go func() {
 
+		c.log.Println("the go routine has started")
+
 		defer close(DataCh)
 		defer close(ErrCh)
 
+		buffer := make([]byte, 1024)
+		c.log.Println("buffer created inside routie")
 		for {
-			buffer := make([]byte, 1024)
+
+			c.log.Println("why are we never inside the for loop?!")
+
 			n, err := c.conn.Read(buffer)
+			c.log.Println("read attempted")
 			if err != nil {
+				c.log.Println("error during read ", err)
 				ErrCh <- err
 				// do we want to return if we have an error reading?
 			}
+
+			c.log.Println("no error during reading of connection")
 
 			cleanedBuff := []byte{}
 			for _, b := range buffer[:n] {
@@ -55,6 +71,8 @@ func (c *Client) Read() (<-chan []byte, <-chan error) {
 					break
 				}
 			}
+
+			c.log.Println(cleanedBuff)
 			DataCh <- cleanedBuff
 
 		}
